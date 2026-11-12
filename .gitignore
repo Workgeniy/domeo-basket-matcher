@@ -6,3 +6,5 @@ Thumbs.db
 .chrome_debug/
 __pycache__/
 node_modules/
+# приватный ключ подписи расширения — НЕ коммитить
+*.pem
