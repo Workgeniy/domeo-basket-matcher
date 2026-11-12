@@ -38,7 +38,8 @@
       {
         "provider": "github",
         "owner": "Workgeniy",
-        "repo": "domeo-basket-matcher"
+        "repo": "domeo-basket-matcher",
+        "releaseType": "release"
       }
     ]
   }
