@@ -50,6 +50,7 @@ function createWindow() {
     }
   });
   Menu.setApplicationMenu(null);
+  win.maximize();
   win.loadFile(path.join(__dirname, "renderer", "index.html"));
 
   // внешние ссылки (Открыть ↗) — в системном браузере

@@ -271,6 +271,8 @@ function showCartLink(link) {
 }
 
 // ---------- webview: навигация ----------
+$("#toggleSide").addEventListener("click", () => document.body.classList.toggle("side-collapsed"));
+wv.addEventListener("dom-ready", () => { try { wv.setZoomFactor(1); } catch (e) {} });
 wv.addEventListener("did-navigate", e => { $("#addr").textContent = e.url; });
 wv.addEventListener("did-navigate-in-page", e => { $("#addr").textContent = e.url; });
 $("#back").addEventListener("click", () => { if (wv.canGoBack()) wv.goBack(); });
