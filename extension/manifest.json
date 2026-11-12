@@ -9,7 +9,8 @@
     "https://*.vseinstrumenti.ru/*",
     "https://*.lemanapro.ru/*",
     "https://store.domeo.ru/*",
-    "https://autocomplete.diginetica.net/*"
+    "https://autocomplete.diginetica.net/*",
+    "https://raw.githubusercontent.com/*"
   ],
   "action": {
     "default_popup": "popup.html",

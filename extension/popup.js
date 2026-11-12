@@ -291,3 +291,22 @@ $("#list").addEventListener("change", e => { const sel = e.target.closest("selec
 $("#cart").addEventListener("click", assemble);
 $("#remember").addEventListener("click", async () => { const n = await saveMatches(); $("#progress").textContent = "Запомнено соответствий: " + n + "."; });
 $("#hist").addEventListener("click", showHistory);
+
+// --- проверка обновлений ---
+const REPO_VERSION_URL = "https://raw.githubusercontent.com/Workgeniy/domeo-basket-matcher/main/VERSION";
+function cmpVer(a, b) {
+  const pa = a.split(".").map(Number), pb = b.split(".").map(Number);
+  for (let i = 0; i < 3; i++) { if ((pa[i] || 0) > (pb[i] || 0)) return 1; if ((pa[i] || 0) < (pb[i] || 0)) return -1; }
+  return 0;
+}
+(async () => {
+  try {
+    const cur = chrome.runtime.getManifest().version;
+    const latest = (await (await fetch(REPO_VERSION_URL, { cache: "no-store" })).text()).trim();
+    if (/^\d+\.\d+\.\d+$/.test(latest) && cmpVer(latest, cur) > 0) {
+      const b = $("#update");
+      b.textContent = "Доступна версия " + latest + " (у вас " + cur + "). Запустите «Обновить.bat» из папки, затем нажмите «Обновить» на карточке расширения.";
+      b.hidden = false;
+    }
+  } catch (e) {}
+})();
