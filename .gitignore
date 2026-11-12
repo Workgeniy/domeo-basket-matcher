@@ -1,0 +1,8 @@
+# артефакты сборки / временное
+*.log
+.DS_Store
+Thumbs.db
+.pw_profile/
+.chrome_debug/
+__pycache__/
+node_modules/

@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<style>
+:root{
+  --bg:#ffffff; --fg:#1a1a1a; --muted:#6b6b66; --border:#e4e4df; --soft:#f6f6f4;
+  --accent:#ffcb05; --accent-ink:#1a1a1a;
+  --good:#1f7a3d; --good-bg:#e7f3ec; --warn:#9a6b00; --warn-bg:#fbf1dc; --crit:#b4281f; --crit-bg:#f8e7e5;
+}
+@media (prefers-color-scheme:dark){:root{
+  --bg:#1f1f23; --fg:#ececec; --muted:#9a9a98; --border:#33333a; --soft:#17171a;
+  --good:#5fcf87; --good-bg:#16301f; --warn:#e0b354; --warn-bg:#2e2512; --crit:#ef7a70; --crit-bg:#331715;
+  color-scheme:dark;
+}}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{width:440px;max-height:600px;overflow-y:auto;background:var(--bg);color:var(--fg);
+  font-family:'Inter',system-ui,sans-serif;font-size:13px;line-height:1.45;padding:14px}
+header{display:flex;align-items:center;gap:9px;margin-bottom:10px}
+header button{margin-left:auto;font-size:11.5px;padding:5px 9px}
+.histitem{border:1px solid var(--border);border-radius:7px;padding:7px 9px;margin-bottom:6px;background:var(--soft);font-size:12px}
+.histitem .h{display:flex;justify-content:space-between;color:var(--muted);font-size:11px;margin-bottom:2px}
+.dictbadge{color:var(--muted);font-size:11px;margin-left:4px}
+#cartlink{border:1px solid var(--accent);border-radius:8px;padding:8px 10px;margin:2px 0 8px;background:var(--soft);font-size:12px}
+#cartlink .u{word-break:break-all;font-family:ui-monospace,monospace;font-size:11.5px;margin-top:3px}
+#cartlink .r{display:flex;gap:6px;margin-top:6px;flex-wrap:wrap;align-items:center}
+.logo{background:var(--accent);color:var(--accent-ink);font-weight:700;font-size:12px;padding:4px 7px;border-radius:6px}
+h1{font-size:14px;font-weight:600;margin:0}
+.src{color:var(--muted);font-size:11.5px;margin:1px 0 0}
+textarea{width:100%;min-height:56px;resize:vertical;border:1px solid var(--border);border-radius:7px;
+  background:var(--soft);color:var(--fg);font-family:inherit;font-size:12px;padding:7px;margin-bottom:8px}
+.row{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+button{font:inherit;font-weight:600;border-radius:7px;padding:7px 11px;cursor:pointer;border:1px solid var(--border);background:var(--bg);color:var(--fg)}
+button.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+button:disabled{opacity:.55;cursor:default}
+.progress{color:var(--muted);font-size:11.5px;flex:1 1 100%;margin-top:2px}
+.summary{display:flex;flex-wrap:wrap;gap:7px;margin:10px 0}
+.tile{background:var(--soft);border:1px solid var(--border);border-radius:8px;padding:6px 10px;min-width:72px}
+.tile .n{font-size:16px;font-weight:700;font-variant-numeric:tabular-nums}
+.tile .l{color:var(--muted);font-size:10.5px}
+.item{border:1px solid var(--border);border-radius:8px;padding:8px;margin-bottom:7px;background:var(--bg)}
+.pos{font-weight:500;margin-bottom:5px}
+.pos .q{color:var(--muted);font-weight:400;font-variant-numeric:tabular-nums}
+select{max-width:100%;width:100%;border:1px solid var(--border);border-radius:6px;background:var(--soft);color:var(--fg);font:inherit;font-size:12px;padding:5px 6px}
+.meta{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-top:5px}
+.price{font-variant-numeric:tabular-nums;font-weight:600;white-space:nowrap}
+.chip{font-size:10.5px;font-weight:600;padding:2px 8px;border-radius:999px;white-space:nowrap}
+.chip.good{background:var(--good-bg);color:var(--good)}
+.chip.warn{background:var(--warn-bg);color:var(--warn)}
+.chip.crit{background:var(--crit-bg);color:var(--crit)}
+.chip.load{background:var(--border);color:var(--muted)}
+a.link{color:var(--muted);font-size:11px;text-decoration:none}
+a.link:hover{text-decoration:underline}
+.hint{color:var(--muted);font-size:11.5px}
+:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+</style>
+</head>
+<body>
+  <header>
+    <span class="logo">DOMEO</span>
+    <div><h1>Подбор по корзине</h1><div class="src" id="src">—</div></div>
+    <button id="hist">История</button>
+  </header>
+
+  <div id="histpanel" hidden></div>
+
+  <textarea id="input" spellcheck="false" placeholder="Можно вставить вручную: вывод букмарклета (с табами) или список по строке."></textarea>
+  <div class="row">
+    <button class="primary" id="read">Прочитать корзину</button>
+    <button id="run">Подобрать из поля</button>
+    <div class="progress" id="progress"></div>
+  </div>
+
+  <div class="summary" id="summary" hidden></div>
+  <div class="row" id="cartrow" hidden>
+    <button class="primary" id="cart">Собрать корзину в DOMEO</button>
+    <button id="remember">Запомнить соответствия</button>
+  </div>
+  <div id="cartlink" hidden></div>
+  <div id="list"></div>
+
+  <script src="popup.js"></script>
+</body>
+</html>

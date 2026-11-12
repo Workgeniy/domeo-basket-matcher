@@ -1,0 +1,18 @@
+{
+  "manifest_version": 3,
+  "name": "DOMEO · Подбор по корзине",
+  "version": "0.1.0",
+  "description": "Читает корзину поставщика (Петрович, ВсеИнструменты, Lemana), подбирает аналоги в store.domeo.ru и собирает корзину.",
+  "permissions": ["activeTab", "scripting", "tabs"],
+  "host_permissions": [
+    "https://*.petrovich.ru/*",
+    "https://*.vseinstrumenti.ru/*",
+    "https://*.lemanapro.ru/*",
+    "https://store.domeo.ru/*",
+    "https://autocomplete.diginetica.net/*"
+  ],
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "DOMEO · Подбор по корзине"
+  }
+}

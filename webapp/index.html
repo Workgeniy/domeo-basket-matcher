@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; connect-src https://autocomplete.diginetica.net; img-src 'self' data:; font-src 'self'; base-uri 'none'; form-action 'none'">
+<title>DOMEO · Подбор по корзине</title>
+<style>
+/* Строгий CSP: весь JS — во внешнем app.js, встроенные скрипты не выполняются.
+   Шрифты системные (без внешних зависимостей). */
+:root{
+  --bg:#f6f6f4; --surface:#ffffff; --fg:#1a1a1a; --muted:#6b6b66; --border:#e4e4df;
+  --accent:#ffcb05; --accent-ink:#1a1a1a;
+  --good:#1f7a3d; --good-bg:#e7f3ec; --warn:#9a6b00; --warn-bg:#fbf1dc; --crit:#b4281f; --crit-bg:#f8e7e5;
+  --font:system-ui,'Segoe UI',Roboto,Arial,sans-serif;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#17171a; --surface:#1f1f23; --fg:#ececec; --muted:#9a9a98; --border:#33333a;
+  --good:#5fcf87; --good-bg:#16301f; --warn:#e0b354; --warn-bg:#2e2512; --crit:#ef7a70; --crit-bg:#331715;
+  color-scheme:dark;
+}}
+:root[data-theme="dark"]{
+  --bg:#17171a; --surface:#1f1f23; --fg:#ececec; --muted:#9a9a98; --border:#33333a;
+  --good:#5fcf87; --good-bg:#16301f; --warn:#e0b354; --warn-bg:#2e2512; --crit:#ef7a70; --crit-bg:#331715;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--fg);font-family:var(--font);font-size:15px;line-height:1.5;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.wrap{max-width:1040px;margin:0 auto;padding-block:20px 56px}
+header.app{display:flex;align-items:center;gap:12px;margin-bottom:18px}
+.logo{background:var(--accent);color:var(--accent-ink);font-weight:700;font-size:15px;padding:6px 10px;border-radius:7px;letter-spacing:.3px}
+h1{font-size:20px;font-weight:600;margin:0}
+.sub{color:var(--muted);font-size:13px;margin:2px 0 0}
+.panel{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px}
+textarea{width:100%;min-height:110px;resize:vertical;border:1px solid var(--border);border-radius:8px;
+  background:var(--bg);color:var(--fg);font-family:var(--font);font-size:13px;padding:10px;line-height:1.45}
+.hint{color:var(--muted);font-size:12.5px;margin:8px 0 0}
+.controls{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+button{font-family:var(--font);font-size:14px;font-weight:600;border-radius:8px;padding:9px 14px;cursor:pointer;border:1px solid var(--border);background:var(--surface);color:var(--fg)}
+button.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+button:disabled{opacity:.55;cursor:default}
+.summary{display:flex;flex-wrap:wrap;gap:10px;margin:18px 0 10px}
+.tile{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:10px 14px;min-width:120px}
+.tile .n{font-size:22px;font-weight:700;font-variant-numeric:tabular-nums}
+.tile .l{color:var(--muted);font-size:12px;margin-top:2px}
+.tablewrap{overflow-x:auto;border:1px solid var(--border);border-radius:12px;background:var(--surface)}
+table{width:100%;border-collapse:collapse;font-size:13.5px;min-width:720px}
+th,td{text-align:left;padding:10px 12px;border-bottom:1px solid var(--border);vertical-align:top}
+th{font-size:11.5px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);font-weight:600;position:sticky;top:0;background:var(--surface)}
+tr:last-child td{border-bottom:none}
+.pos-name{font-weight:500}
+.pos-meta{color:var(--muted);font-size:12px;margin-top:2px;font-variant-numeric:tabular-nums}
+.cand{display:flex;flex-direction:column;gap:6px;min-width:0}
+select.cand-pick{max-width:100%;border:1px solid var(--border);border-radius:7px;background:var(--bg);color:var(--fg);font-family:var(--font);font-size:13px;padding:6px 8px}
+.price{font-variant-numeric:tabular-nums;white-space:nowrap;font-weight:600}
+a.link,span.link{color:var(--muted);font-size:12px;text-decoration:none}
+a.link:hover{color:var(--fg);text-decoration:underline}
+.chip{display:inline-block;font-size:11.5px;font-weight:600;padding:3px 9px;border-radius:999px;white-space:nowrap}
+.chip.good{background:var(--good-bg);color:var(--good)}
+.chip.warn{background:var(--warn-bg);color:var(--warn)}
+.chip.crit{background:var(--crit-bg);color:var(--crit)}
+.chip.load{background:var(--border);color:var(--muted)}
+.score{color:var(--muted);font-size:11.5px;font-variant-numeric:tabular-nums;margin-top:3px}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+@media (max-width:560px){.wrap{padding-block:14px 48px}h1{font-size:18px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="app">
+    <span class="logo">DOMEO</span>
+    <div>
+      <h1>Подбор по корзине</h1>
+      <p class="sub">Позиции из корзины поставщика → аналоги из каталога store.domeo.ru</p>
+    </div>
+  </header>
+
+  <div class="panel">
+    <textarea id="input" spellcheck="false" placeholder="Вставьте список товаров (по одной позиции в строку) или вывод закладки «Прочитать корзину». Ссылки сюда вставлять не нужно."></textarea>
+    <p class="hint">Поле принимает список товаров и вывод закладки (с табами). Поиск идёт по каталогу DOMEO (Diginetica).</p>
+    <div class="controls">
+      <button class="primary" id="run">Подобрать</button>
+      <button id="sample">Загрузить пример</button>
+      <button id="clear">Очистить</button>
+      <button id="cart" hidden>Скопировать список для закладки</button>
+      <button id="copy" hidden>Скопировать таблицу (CSV)</button>
+      <span id="progress" class="hint" style="align-self:center"></span>
+    </div>
+  </div>
+
+  <div id="summary" class="summary" hidden></div>
+
+  <div id="result" class="tablewrap" hidden>
+    <table>
+      <thead><tr>
+        <th style="width:34%">Позиция из корзины</th>
+        <th style="width:42%">Подобрано в DOMEO</th>
+        <th style="width:12%">Цена</th>
+        <th style="width:12%">Статус</th>
+      </tr></thead>
+      <tbody id="rows"></tbody>
+    </table>
+  </div>
+</div>
+<script src="app.js" defer></script>
+</body>
+</html>
