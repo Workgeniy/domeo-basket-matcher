@@ -45,6 +45,7 @@ button { font: inherit; cursor: pointer; }
 /* блоки управления */
 .block { background: #141825; border: 1px solid #222838; border-radius: 10px; padding: 10px; }
 .label { color: #9aa0b2; font-size: 12px; margin-bottom: 8px; }
+.tip { color: #8a90a2; font-size: 11px; margin-top: 8px; line-height: 1.4; }
 .quick { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
 .chipbtn { border: 1px solid #2c3346; background: #1b2030; color: #cdd2df; border-radius: 999px; padding: 5px 11px; }
 .chipbtn:hover { background: #222a3d; }

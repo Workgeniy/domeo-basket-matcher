@@ -3,7 +3,7 @@
 // Главный процесс: окно, встроенный браузер (webview), подбор через Diginetica,
 // хранилище словаря/истории, автообновление через GitHub Releases.
 
-const { app, BrowserWindow, ipcMain, shell, Menu } = require("electron");
+const { app, BrowserWindow, ipcMain, shell, Menu, session } = require("electron");
 const path = require("path");
 const fs = require("fs");
 
@@ -14,6 +14,11 @@ const API = "https://autocomplete.diginetica.net/autocomplete";
 const APIKEY = "R14U9ZT7MH";
 const SITE = "https://store.domeo.ru";
 const TOP = 4;
+
+// Обычная подпись Chrome — чтобы встроенный браузер не воспринимался как автоматизация
+// (по умолчанию в UA есть "Electron" и имя приложения, что ловит анти-бот поставщиков).
+const UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36";
+app.userAgentFallback = UA;
 
 // ---------- хранилище (JSON в userData) ----------
 let store = {};
@@ -104,6 +109,18 @@ function wireUpdater() {
 // ---------- запуск ----------
 app.whenReady().then(() => {
   loadStore();
+
+  // Встроенному браузеру (partition persist:domeo) — обычный Chrome-UA
+  // и правдоподобный заголовок Accept-Language, чтобы меньше ловить анти-бот.
+  try {
+    const ses = session.fromPartition("persist:domeo");
+    ses.setUserAgent(UA);
+    ses.webRequest.onBeforeSendHeaders((details, cb) => {
+      details.requestHeaders["Accept-Language"] = "ru-RU,ru;q=0.9,en;q=0.8";
+      cb({ requestHeaders: details.requestHeaders });
+    });
+  } catch (e) {}
+
   wireUpdater();
   createWindow();
 
