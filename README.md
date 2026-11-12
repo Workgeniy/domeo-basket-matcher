@@ -43,6 +43,30 @@
 `browser://extensions` (или `chrome://extensions`) → Режим разработчика →
 «Загрузить распакованное» → папка `extension/`.
 
+## Деплой на Kubernetes (stage)
+
+Приложение — статика, упаковывается в контейнер (nginx) и разворачивается в k8s.
+
+1. Собрать и запушить образ (в вашем CI или локально):
+   ```
+   docker build -t REGISTRY/domeo-basket-matcher:latest .
+   docker push REGISTRY/domeo-basket-matcher:latest
+   ```
+2. В `deploy/k8s/deployment.yaml` подставить ваш `image` (REGISTRY/…),
+   в `deploy/k8s/ingress.yaml` — ваш `host` и ingress-аннотации (класс, cert-manager).
+3. Применить:
+   ```
+   kubectl apply -f deploy/k8s/
+   ```
+
+Что внутри:
+- `Dockerfile` — `nginx:1.27-alpine`, отдаёт `webapp/`.
+- `deploy/nginx.conf` — security-заголовки (CSP, X-Frame-Options, nosniff, Referrer-Policy) + `/healthz`.
+- `deploy/k8s/` — Deployment (2 реплики, пробы на `/healthz`, лимиты) + Service + Ingress (TLS).
+
+HTTPS обязателен (приложение ходит в Diginetica по https) — в Ingress настроен TLS.
+Образ и применение манифестов — на вашей стороне (нужен доступ к registry и кластеру).
+
 ## Безопасность (защита от вставки скриптов)
 
 Веб-приложение защищено от XSS:

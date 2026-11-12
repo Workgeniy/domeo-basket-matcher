@@ -1,0 +1,52 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: domeo-basket-matcher
+  labels:
+    app: domeo-basket-matcher
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: domeo-basket-matcher
+  template:
+    metadata:
+      labels:
+        app: domeo-basket-matcher
+    spec:
+      containers:
+        - name: web
+          # ЗАМЕНИТЬ на ваш registry/образ:тег (куда CI пушит собранный Dockerfile)
+          image: REGISTRY/domeo-basket-matcher:latest
+          ports:
+            - containerPort: 80
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: 80
+            initialDelaySeconds: 2
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 80
+            initialDelaySeconds: 5
+            periodSeconds: 20
+          resources:
+            requests:
+              cpu: "10m"
+              memory: "32Mi"
+            limits:
+              cpu: "100m"
+              memory: "64Mi"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: domeo-basket-matcher
+spec:
+  selector:
+    app: domeo-basket-matcher
+  ports:
+    - port: 80
+      targetPort: 80
