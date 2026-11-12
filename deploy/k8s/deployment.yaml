@@ -1,52 +1,41 @@
+# Манифесты под конвенцию Domeo-Infra (GitOps/ArgoCD).
+# Кладутся в Domeo-Infra: deploy/services/stage/<product>/<service>/manifests/
+# namespace и DNS-зона выводятся платформой из пути (<product>-<env>), Application создаёт платформа.
+# Продукт/неймспейс уточнить с платформой (разрешённые: crm, cfg, cad, id) — ниже стоит crm как предположение.
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: domeo-basket-matcher
-  labels:
-    app: domeo-basket-matcher
+  name: podbor-korzin
+  namespace: crm-stage
+  annotations:
+    reloader.stakater.com/auto: "true"
 spec:
-  replicas: 2
+  replicas: 1
   selector:
-    matchLabels:
-      app: domeo-basket-matcher
+    matchLabels: { app: podbor-korzin }
   template:
     metadata:
-      labels:
-        app: domeo-basket-matcher
+      labels: { app: podbor-korzin }
     spec:
       containers:
         - name: web
-          # ЗАМЕНИТЬ на ваш registry/образ:тег (куда CI пушит собранный Dockerfile)
-          image: REGISTRY/domeo-basket-matcher:latest
+          # CI после сборки заменяет на конкретный дайджест (GHCR):
+          image: ghcr.io/domeocompany/domeo-basket-matcher@sha256:TODO
           ports:
-            - containerPort: 80
-          readinessProbe:
-            httpGet:
-              path: /healthz
-              port: 80
-            initialDelaySeconds: 2
-            periodSeconds: 10
-          livenessProbe:
-            httpGet:
-              path: /healthz
-              port: 80
-            initialDelaySeconds: 5
-            periodSeconds: 20
+            - containerPort: 8080
           resources:
-            requests:
-              cpu: "10m"
-              memory: "32Mi"
-            limits:
-              cpu: "100m"
-              memory: "64Mi"
+            requests: { cpu: 50m, memory: 64Mi }
+            limits: { cpu: 500m, memory: 256Mi }
+          readinessProbe:
+            httpGet: { path: /, port: 8080 }
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  name: domeo-basket-matcher
+  name: podbor-korzin
+  namespace: crm-stage
 spec:
-  selector:
-    app: domeo-basket-matcher
+  selector: { app: podbor-korzin }
   ports:
     - port: 80
-      targetPort: 80
+      targetPort: 8080

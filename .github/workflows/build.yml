@@ -1,0 +1,46 @@
+name: build-image
+
+# Собирает Docker-образ приложения и публикует его в GHCR.
+# По умолчанию пушит в GHCR владельца репозитория (ghcr.io/<owner>/domeo-basket-matcher).
+# Если нужен образ в GHCR организации (ghcr.io/domeocompany/...) — зеркалируется
+# платформенным workflow image-mirror в Domeo-Infra, либо смените images ниже и дайте
+# раннеру packages:write в организацию.
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Login to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Image metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/${{ github.repository_owner }}/domeo-basket-matcher
+          tags: |
+            type=sha
+            type=raw,value=latest
+
+      - name: Build and push
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}

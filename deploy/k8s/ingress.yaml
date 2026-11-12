@@ -1,26 +1,24 @@
+# Ingress под конвенцию Domeo-Infra: Traefik + cert-manager, stage-зона *.test.domeohome.ru.
+# Хост уточнить при активации (переключение DNS — шаг миграции сервиса).
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: domeo-basket-matcher
+  name: podbor-korzin
+  namespace: crm-stage
   annotations:
-    # под вашу инфраструктуру (ingress-класс, cert-manager и т.п.):
-    # kubernetes.io/ingress.class: "nginx"
-    # cert-manager.io/cluster-issuer: "letsencrypt"
-    {}
+    cert-manager.io/cluster-issuer: letsencrypt
 spec:
+  ingressClassName: traefik
+  tls:
+    - hosts: [podbor.test.domeohome.ru]
+      secretName: podbor-korzin-tls
   rules:
-    # ЗАМЕНИТЬ на ваш stage-хост
-    - host: podbor.stage.example.ru
+    - host: podbor.test.domeohome.ru
       http:
         paths:
           - path: /
             pathType: Prefix
             backend:
               service:
-                name: domeo-basket-matcher
-                port:
-                  number: 80
-  tls:
-    - hosts:
-        - podbor.stage.example.ru
-      secretName: domeo-basket-matcher-tls
+                name: podbor-korzin
+                port: { number: 80 }

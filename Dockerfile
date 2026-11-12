@@ -6,4 +6,4 @@ COPY deploy/nginx.conf /etc/nginx/conf.d/default.conf
 # сама статика приложения
 COPY webapp/ /usr/share/nginx/html/
 
-EXPOSE 80
+EXPOSE 8080

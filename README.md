@@ -43,29 +43,33 @@
 `browser://extensions` (или `chrome://extensions`) → Режим разработчика →
 «Загрузить распакованное» → папка `extension/`.
 
-## Деплой на Kubernetes (stage)
+## Деплой на Kubernetes (stage) — под конвенцию Domeo-Infra (GitOps/ArgoCD)
 
-Приложение — статика, упаковывается в контейнер (nginx) и разворачивается в k8s.
+Приложение — статика в nginx-контейнере (слушает **8080**). Модель как в Domeo-Infra:
+образ в GHCR, манифесты в GitOps-репозитории, доставка через ArgoCD.
 
-1. Собрать и запушить образ (в вашем CI или локально):
-   ```
-   docker build -t REGISTRY/domeo-basket-matcher:latest .
-   docker push REGISTRY/domeo-basket-matcher:latest
-   ```
-2. В `deploy/k8s/deployment.yaml` подставить ваш `image` (REGISTRY/…),
-   в `deploy/k8s/ingress.yaml` — ваш `host` и ingress-аннотации (класс, cert-manager).
-3. Применить:
-   ```
-   kubectl apply -f deploy/k8s/
-   ```
+1. **Образ.** CI репозитория (`.github/workflows/build.yml`) собирает образ и пушит в
+   GHCR: `ghcr.io/<owner>/domeo-basket-matcher`. Нужен образ в GHCR организации —
+   зеркалируется платформенным `image-mirror`.
+2. **Манифесты.** Содержимое `deploy/k8s/` (`deployment.yaml`, `ingress.yaml`) кладётся в
+   `Domeo-Infra` по пути `deploy/services/stage/<product>/<service>/manifests/`.
+   Продукт/namespace/host задаёт платформа (разрешённые продукты: `crm`, `cfg`, `cad`, `id`);
+   в манифестах стоят предположения (`crm-stage`, `podbor.test.domeohome.ru`) — **уточнить**.
+   `Application` создаёт платформенный ApplicationSet; вручную его не добавляют.
+3. **Доставка.** ArgoCD синхронизирует каталог сервиса (`selfHeal` / `prune`).
 
-Что внутри:
-- `Dockerfile` — `nginx:1.27-alpine`, отдаёт `webapp/`.
-- `deploy/nginx.conf` — security-заголовки (CSP, X-Frame-Options, nosniff, Referrer-Policy) + `/healthz`.
-- `deploy/k8s/` — Deployment (2 реплики, пробы на `/healthz`, лимиты) + Service + Ingress (TLS).
+Конвенции, уже учтённые в манифестах:
+- контейнер слушает **8080**, Service `80 → 8080`;
+- аннотация `reloader.stakater.com/auto: "true"`, readinessProbe на `/`;
+- Ingress: `ingressClassName: traefik`, `cert-manager.io/cluster-issuer: letsencrypt`,
+  stage-зона `*.test.domeohome.ru`, TLS включён.
 
-HTTPS обязателен (приложение ходит в Diginetica по https) — в Ingress настроен TLS.
-Образ и применение манифестов — на вашей стороне (нужен доступ к registry и кластеру).
+`Dockerfile` — `nginx:1.27-alpine`, отдаёт `webapp/`; `deploy/nginx.conf` — security-заголовки
+(CSP, X-Frame-Options, nosniff, Referrer-Policy) + `/healthz`. HTTPS обязателен (приложение
+ходит в Diginetica по https).
+
+Сборку образа в GHCR-организации и перенос манифестов в Domeo-Infra делает ваш CI/платформа —
+здесь нет доступа к GHCR организации и к кластеру.
 
 ## Безопасность (защита от вставки скриптов)
 
