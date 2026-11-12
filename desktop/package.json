@@ -1,0 +1,45 @@
+{
+  "name": "domeo-podbor",
+  "version": "0.1.0",
+  "description": "DOMEO - podbor po korzine (desktop)",
+  "main": "main.js",
+  "author": "DOMEO",
+  "license": "UNLICENSED",
+  "scripts": {
+    "start": "electron .",
+    "dist": "electron-builder --win --publish never",
+    "release": "electron-builder --win --publish always"
+  },
+  "devDependencies": {
+    "electron": "31.7.6",
+    "electron-builder": "24.13.3"
+  },
+  "dependencies": {
+    "electron-updater": "6.3.9"
+  },
+  "build": {
+    "appId": "ru.domeo.podbor",
+    "productName": "DOMEO Podbor",
+    "directories": { "output": "release" },
+    "files": ["**/*", "!release/**", "!**/*.map"],
+    "win": {
+      "target": ["nsis"],
+      "artifactName": "DOMEO-Podbor-Setup-${version}.${ext}"
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "DOMEO Podbor"
+    },
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "Workgeniy",
+        "repo": "domeo-basket-matcher"
+      }
+    ]
+  }
+}

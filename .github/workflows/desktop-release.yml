@@ -1,0 +1,35 @@
+name: desktop-release
+
+# Собирает Windows-установщик DOMEO Podbor и публикует его в GitHub Releases.
+# electron-builder заодно кладёт latest.yml — это фид для автообновления (electron-updater).
+# Запуск: пуш тега вида v0.1.0  (или вручную через "Run workflow").
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: windows-latest
+    defaults:
+      run:
+        working-directory: desktop
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install deps
+        run: npm install
+
+      - name: Build and publish installer
+        run: npx --no-install electron-builder --win --publish always
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
