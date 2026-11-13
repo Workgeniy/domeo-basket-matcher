@@ -91,14 +91,54 @@ function parseText(text) {
 }
 
 // ---------- подбор ----------
+const RX_NONWORD = /[^0-9a-zа-я]+/gi;
+function norm(s) { return String(s || "").toLowerCase().replace(/ё/g, "е").replace(RX_NONWORD, " ").replace(/\s+/g, " ").trim(); }
+function toks(s) { return norm(s).split(" ").filter(t => t.length >= 2); }
+
+// похожесть: доля слов запроса, найденных в названии кандидата (числа/размеры важны)
+function simScore(qTokens, text) {
+  if (!qTokens.length) return 0;
+  const set = new Set(toks(text));
+  if (!set.size) return 0;
+  let hit = 0, numHit = 0, numTot = 0;
+  for (const t of qTokens) {
+    const isNum = /\d/.test(t);
+    if (isNum) numTot++;
+    if (set.has(t)) { hit++; if (isNum) numHit++; }
+  }
+  let s = hit / qTokens.length;
+  if (numTot > 0 && numHit === 0) s *= 0.6; // размеры не совпали — штраф
+  return s;
+}
+async function fetchRaw(term) {
+  try { const j = await (await fetch(API + "?apiKey=" + APIKEY + "&st=" + encodeURIComponent(term))).json(); return j.products || []; }
+  catch (e) { return []; }
+}
+function mapCand(p, qTokens) {
+  const name = p.name || "";
+  return {
+    name, brand: p.brand || "", price: parseFloat(p.price) || 0, score: Math.round(p.score || 0),
+    avail: !!p.available, link: SITE + (p.link_url || ""), fromDict: false,
+    sim: simScore(qTokens, (p.brand ? p.brand + " " : "") + name)
+  };
+}
 async function search(term) {
   if (!term) return [];
-  const u = API + "?apiKey=" + APIKEY + "&st=" + encodeURIComponent(term);
-  const j = await (await fetch(u)).json();
-  return (j.products || []).slice(0, TOP).map(p => ({
-    name: p.name, brand: p.brand || "", price: parseFloat(p.price) || 0,
-    score: Math.round(p.score || 0), avail: !!p.available, link: SITE + (p.link_url || ""), fromDict: false
-  }));
+  const qt = toks(term);
+  let raw = await fetchRaw(term);
+  const best = raw.reduce((m, p) => Math.max(m, simScore(qt, (p.brand ? p.brand + " " : "") + (p.name || ""))), 0);
+  // слабый результат — пробуем короткий очищенный запрос и объединяем кандидатов
+  if (best < 0.4) {
+    const short = qt.filter(t => t.length >= 3 && !/^\d+$/.test(t)).slice(0, 5).join(" ");
+    if (short && short !== norm(term)) {
+      const raw2 = await fetchRaw(short);
+      const seen = new Set(raw.map(p => p.link_url));
+      for (const p of raw2) if (!seen.has(p.link_url)) { seen.add(p.link_url); raw.push(p); }
+    }
+  }
+  const cands = raw.slice(0, 20).map(p => mapCand(p, qt));
+  cands.sort((a, b) => (b.sim + (b.avail ? 0.08 : 0)) - (a.sim + (a.avail ? 0.08 : 0)) || (b.score - a.score));
+  return cands.slice(0, 6);
 }
 
 // ---------- утилиты ----------
@@ -106,8 +146,8 @@ const qtyNum = s => { const m = String(s).match(/\d+(?:[.,]\d+)?/); return m ? p
 const money = n => (n || 0).toLocaleString("ru-RU", { maximumFractionDigits: 0 });
 const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
 const trim = (s, n) => s.length > n ? s.slice(0, n - 1) + "…" : s;
-function status(score) { if (score >= GOOD) return ["good", "Совпадение"]; if (score >= WARN) return ["warn", "Проверить"]; return ["crit", "Не найдено"]; }
-function statusOf(sel) { return sel ? (sel.fromDict ? ["good", "Из словаря"] : status(sel.score)) : ["crit", "Не найдено"]; }
+function status(sim) { if (sim >= 0.6) return ["good", "Совпадение"]; if (sim >= 0.33) return ["warn", "Проверить"]; return ["crit", "Сомнительно"]; }
+function statusOf(sel) { return sel ? (sel.fromDict ? ["good", "Из словаря"] : status(sel.sim || 0)) : ["crit", "Не найдено"]; }
 
 // ---------- рендер ----------
 function render() {
@@ -130,7 +170,7 @@ function render() {
       '<div class="pos">' + esc(it.name || "(без названия)") + ' <span class="q">' + esc(it.qty || "") + "</span>" +
       (it.code ? '<span class="dictbadge">' + esc(it.source || "") + " " + esc(it.code) + "</span>" : "") + "</div>" +
       body +
-      '<div class="meta"><span>' + (sel ? '<a class="link" href="' + sel.link + '" target="_blank">' + (sel.fromDict ? "из словаря" : esc(sel.brand || "карточка") + " · score " + sel.score) + "</a>" : "") + "</span>" +
+      '<div class="meta"><span>' + (sel ? '<a class="link" href="' + sel.link + '" target="_blank">' + (sel.fromDict ? "из словаря" : esc(sel.brand || "карточка") + " · " + Math.round((sel.sim || 0) * 100) + "%") + "</a>" : "") + "</span>" +
       "<span>" + price + " " + chip + "</span></div>";
     list.appendChild(el);
   });
@@ -165,8 +205,7 @@ async function matchAll(positions, source) {
     }
     state[i].cands = cands;
     state[i].loading = false;
-    if (cands[0] && cands[0].fromDict) state[i].pick = 0;
-    else { const av = cands.findIndex(c => c.avail); state[i].pick = av >= 0 ? av : 0; }
+    state[i].pick = 0; // кандидаты уже отранжированы по похожести (словарь — сверху)
     render();
   }
   $("#progress").textContent = "Готово.";
