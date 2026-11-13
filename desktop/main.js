@@ -20,6 +20,12 @@ const TOP = 4;
 const UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36";
 app.userAgentFallback = UA;
 
+// Запуск из кода (dev) — отдельный профиль, чтобы не конфликтовать с установленной версией
+// (иначе обе лезут в один кэш и получаем "Unable to move the cache / access denied").
+if (!app.isPackaged) {
+  try { app.setPath("userData", app.getPath("userData") + "-dev"); } catch (e) {}
+}
+
 // ---------- хранилище (JSON в userData) ----------
 let store = {};
 function storePath() { return path.join(app.getPath("userData"), "data.json"); }
@@ -39,7 +45,7 @@ function createWindow() {
     height: 860,
     minWidth: 980,
     minHeight: 620,
-    title: "DOMEO · Подбор по корзине",
+    title: app.isPackaged ? "DOMEO · Подбор по корзине" : "DOMEO · Подбор по корзине (dev)",
     backgroundColor: "#0f1115",
     webPreferences: {
       preload: path.join(__dirname, "preload.js"),
