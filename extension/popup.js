@@ -294,8 +294,9 @@ async function openLinkAndRead() {
   catch (e) { $("#progress").textContent = "Не удалось прочитать страницу: " + e.message; return; }
   if (!res || !res.items.length) {
     $("#progress").textContent = "На странице корзина не найдена. Проверьте, что вы вошли у поставщика и по ссылке открывается именно корзина.";
-    return;
+    return; // вкладку оставляем открытой, чтобы было видно, что пришло
   }
+  try { await chrome.tabs.remove(tab.id); } catch (e) {} // прочитали — временную вкладку закрываем
   $("#src").textContent = "Источник: " + res.source + " · " + res.items.length + " поз.";
   await matchAll(res.items, res.source);
 }
@@ -314,6 +315,13 @@ $("#list").addEventListener("change", e => { const sel = e.target.closest("selec
 $("#cart").addEventListener("click", assemble);
 $("#remember").addEventListener("click", async () => { const n = await saveMatches(); $("#progress").textContent = "Запомнено соответствий: " + n + "."; });
 $("#hist").addEventListener("click", showHistory);
+
+// открыть интерфейс в отдельном окне (не закрывается при клике на страницу)
+const _openwin = document.querySelector("#openwin");
+if (_openwin) _openwin.addEventListener("click", () => {
+  try { chrome.windows.create({ url: chrome.runtime.getURL("app.html"), type: "normal", width: 1120, height: 840 }); window.close(); }
+  catch (e) {}
+});
 
 // --- проверка обновлений ---
 const REPO_VERSION_URL = "https://raw.githubusercontent.com/Workgeniy/domeo-basket-matcher/main/VERSION";
