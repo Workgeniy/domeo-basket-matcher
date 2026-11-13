@@ -302,12 +302,31 @@ $("#reload").addEventListener("click", () => wv.reload());
 document.querySelectorAll(".chipbtn").forEach(b => b.addEventListener("click", () => { showBrowser(true); navigate(b.dataset.url); }));
 $("#read").addEventListener("click", readActive);
 
-// ---------- события управления ----------
-$("#run").addEventListener("click", () => {
-  const pos = parseText($("#input").value);
-  if (!pos.length) { progress("Нет позиций для разбора."); return; }
+// ---------- обработка ввода ----------
+const isSingleUrl = text => /^https?:\/\/[^\s]+$/i.test(text.trim());
+
+async function openLinkInBrowser(u) {
+  showBrowser(true);
+  progress("Открываю ссылку в окне «Браузер DOMEO»…");
+  await navigate(u);
+  progress("Ссылка открыта в окне ниже. Если корзина видна — нажмите «Прочитать корзину из окна». Если сайт просит проверку/вход — пройдите её. Либо прочитайте корзину закладкой в своём браузере и вставьте список сюда.");
+}
+
+function runInput() {
+  const raw = $("#input").value;
+  if (isSingleUrl(raw)) { openLinkInBrowser(raw.trim()); return; }
+  const pos = parseText(raw);
+  if (!pos.length) {
+    progress(raw.trim()
+      ? "Не распознал позиции. Сюда нужен список товаров (по строке на позицию) из закладки «DOMEO: читать корзину», а не ссылка."
+      : "Поле пустое. Вставьте список из закладки или введите позиции вручную.");
+    return;
+  }
   matchAll(pos, "Ручной ввод");
-});
+}
+
+// ---------- события управления ----------
+$("#run").addEventListener("click", runInput);
 $("#sample").addEventListener("click", () => { $("#input").value = SAMPLE; matchAll(parseText(SAMPLE), "Пример"); });
 $("#clear").addEventListener("click", () => { $("#input").value = ""; state = []; showResults(false); $("#cartlink").hidden = true; $("#histpanel").hidden = true; progress(""); });
 $("#rows").addEventListener("change", e => { const sel = e.target.closest("select.cand-pick"); if (!sel) return; state[+sel.dataset.i].pick = +sel.value; render(); });
