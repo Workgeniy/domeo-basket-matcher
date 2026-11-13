@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8" />
+<title>DOMEO · Закладка «Читать корзину»</title>
+<style>
+  body { font: 15px/1.6 -apple-system, "Segoe UI", Roboto, Arial, sans-serif; color: #1c1f26; background: #f5f6f8; margin: 0; padding: 32px; }
+  .wrap { max-width: 760px; margin: 0 auto; }
+  h1 { font-size: 22px; margin: 0 0 6px; }
+  .sub { color: #5c6370; margin: 0 0 24px; }
+  .card { background: #fff; border: 1px solid #e3e6eb; border-radius: 14px; padding: 20px 22px; margin-bottom: 18px; }
+  .dragbtn {
+    display: inline-block; background: #3b82f6; color: #fff; text-decoration: none;
+    font-weight: 600; font-size: 16px; padding: 12px 20px; border-radius: 10px; cursor: grab;
+    box-shadow: 0 2px 8px rgba(59,130,246,.3);
+  }
+  .dragbtn:active { cursor: grabbing; }
+  ol { margin: 8px 0 0; padding-left: 22px; }
+  li { margin: 6px 0; }
+  .muted { color: #5c6370; font-size: 13px; }
+  textarea { width: 100%; height: 120px; font: 12px/1.4 Consolas, monospace; border: 1px solid #d0d4da; border-radius: 8px; padding: 10px; box-sizing: border-box; background: #fbfbfc; }
+  code { background: #eef0f3; padding: 1px 5px; border-radius: 4px; }
+  .warn { background: #fff7e6; border: 1px solid #f0d9a8; border-radius: 10px; padding: 12px 14px; font-size: 14px; }
+  b { color: #11151c; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>DOMEO · Закладка «Читать корзину»</h1>
+  <p class="sub">Читает корзину поставщика в вашем обычном браузере (где вы залогинены и доверенный) и копирует позиции — вставите их в приложение DOMEO. Полностью мимо анти-бота.</p>
+
+  <div class="card">
+    <b>Шаг 1. Установите закладку (один раз)</b>
+    <p class="muted" style="margin:8px 0 14px">Перетащите эту синюю кнопку на панель закладок браузера (под адресной строкой). Если панели не видно — включите её: Ctrl+Shift+B.</p>
+    <a id="bm" class="dragbtn" href="#" draggable="true">📋 DOMEO: читать корзину</a>
+  </div>
+
+  <div class="card">
+    <b>Шаг 2. Как пользоваться</b>
+    <ol>
+      <li>Откройте в браузере <b>корзину поставщика</b> (Петрович / ВсеИнструменты / Lemana) — как обычно, под своим логином.</li>
+      <li>Нажмите закладку <b>«📋 DOMEO: читать корзину»</b> на панели. Появится сообщение «Скопировано позиций: N».</li>
+      <li>Переключитесь в приложение <b>DOMEO · Подбор по корзине</b>, вставьте (Ctrl+V) в поле <b>«…или вставьте список вручную»</b> и нажмите <b>«Подобрать по списку»</b>.</li>
+      <li>Проверьте подбор и нажмите <b>«Собрать корзину в DOMEO»</b> — приложение соберёт корзину и выдаст ссылку.</li>
+    </ol>
+  </div>
+
+  <div class="card">
+    <b>Если закладку не получается перетащить</b>
+    <p class="muted" style="margin:8px 0 10px">Создайте закладку вручную: добавьте любую страницу в закладки, затем откройте её свойства (правой кнопкой → «Изменить») и вставьте в поле «Адрес/URL» весь текст ниже:</p>
+    <textarea id="code" readonly onclick="this.select()">javascript:(function(){var h=location.host,o={source:"",items:[]};function t(e){return e?e.textContent.replace(/\s+/g," ").trim():"";}var p=new URLSearchParams(location.search).get("products");if(p){o.source="Lemana";o.items=p.split(",").map(function(x){var k=x.split(":");return k.length===2?{name:"",code:k[0].trim(),qty:k[1].trim()}:null;}).filter(Boolean);}else if(/petrovich\.ru$/.test(h)&&document.querySelector('[data-test="estimate-products"]')){o.source="Петрович";document.querySelectorAll('[data-test="estimate-products"]').forEach(function(c){o.items.push({name:t(c.querySelector('[data-test="product-title"]')),qty:t(c.querySelector(".qty-wrapper")),code:t(c.querySelector('[data-test="product-code"]'))});});}else{var v=document.querySelectorAll('[data-behavior="cart-product-name"]');if(/vseinstrumenti\.ru$/.test(h)&&v.length){o.source="ВсеИнструменты";v.forEach(function(n){var i=n;while(i&&!(i.querySelector&&i.querySelector('[data-qa="cart-product-price-total"]')))i=i.parentElement;i=i||n.parentElement;o.items.push({name:t(n),qty:t(i.querySelector('[class*="badge"]')),code:t(i.querySelector('[data-qa="product-code"]')).replace(/^Код:\s*/i,"")});});}}if(!o.items.length){alert("Корзина не найдена. Откройте страницу корзины Петрович / ВсеИнструменты / Lemana и нажмите закладку ещё раз.");return;}var s=o.items.map(function(it){return [it.name||"",it.qty||"",it.code||""].join("\t");}).join("\n");function d(){alert("Скопировано позиций: "+o.items.length+" ("+o.source+").\n\nПереключитесь в приложение DOMEO, вставьте в поле «вставьте список вручную» и нажмите «Подобрать по списку».");}if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(s).then(d,function(){window.prompt("Выделите и скопируйте (Ctrl+C), затем вставьте в приложение:",s);});}else{window.prompt("Выделите и скопируйте (Ctrl+C), затем вставьте в приложение:",s);}})();</textarea>
+  </div>
+
+  <div class="warn">
+    <b>Если какой-то сайт блокирует закладку</b> (редко, из-за своей защиты) — используйте запасной способ: расширение из папки
+    <code>domeo-podbor-extension</code> на рабочем столе (ставится в браузер через «Загрузить распакованное»). Оно читает корзину тем же способом.
+  </div>
+</div>
+
+<script>
+  // href закладки берём из текстового поля (чтобы кавычки и слэши не ломались в разметке)
+  var code = document.getElementById('code').value;
+  document.getElementById('bm').setAttribute('href', code);
+</script>
+</body>
+</html>
