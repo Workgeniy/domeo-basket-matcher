@@ -58,6 +58,17 @@ function createWindow() {
   Menu.setApplicationMenu(null);
   win.maximize();
   win.loadFile(path.join(__dirname, "renderer", "index.html"));
+  win.once("ready-to-show", () => win.maximize());
+
+  // dev-диагностика: вывод из страницы и размеры окна в консоль
+  if (!app.isPackaged) {
+    win.webContents.on("console-message", (e, lvl, msg) => console.log("[page]", msg));
+    win.webContents.on("did-finish-load", () => {
+      win.maximize();
+      const b = win.getContentBounds();
+      console.log("[main] content size: " + b.width + " x " + b.height);
+    });
+  }
 
   // внешние ссылки (Открыть ↗) — в системном браузере
   win.webContents.setWindowOpenHandler(({ url }) => {

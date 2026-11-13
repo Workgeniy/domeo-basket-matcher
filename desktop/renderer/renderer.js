@@ -353,3 +353,11 @@ window.api.onUpdateStatus(m => {
   else if (m.state === "error") { showUpd("Не удалось проверить обновления.", false); setTimeout(() => updbar.hidden = true, 4000); }
 });
 $("#btnUpd").addEventListener("click", () => window.api.checkUpdates());
+
+// dev-диагностика размеров (видно в чёрном окне запуска)
+setTimeout(() => {
+  try {
+    const r = wv.getBoundingClientRect();
+    console.log("DIAG innerH=" + window.innerHeight + " wvH=" + Math.round(r.height) + " wvTop=" + Math.round(r.top));
+  } catch (e) {}
+}, 1800);
