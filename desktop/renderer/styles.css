@@ -19,13 +19,13 @@
 *{box-sizing:border-box}
 html,body{margin:0}
 body{background:var(--bg);color:var(--fg);font-family:var(--font);font-size:15px;line-height:1.5;overflow-x:hidden}
-.wrap{max-width:min(1600px,97vw);margin:0 auto;padding:10px 16px 24px}
+.wrap{max-width:min(1600px,97vw);margin:0 auto;padding:6px 16px 20px}
 
-/* шапка */
-header.app{display:flex;align-items:center;gap:12px;margin-bottom:8px}
-.logo{background:var(--accent);color:var(--accent-ink);font-weight:700;font-size:15px;padding:6px 10px;border-radius:7px;letter-spacing:.3px}
+/* шапка — компактная, чтобы браузеру оставалось больше высоты */
+header.app{display:flex;align-items:center;gap:10px;margin-bottom:4px}
+.logo{background:var(--accent);color:var(--accent-ink);font-weight:700;font-size:13px;padding:4px 8px;border-radius:6px;letter-spacing:.3px}
 .htext{flex:1 1 auto;min-width:0}
-h1{font-size:20px;font-weight:600;margin:0}
+h1{font-size:16px;font-weight:600;margin:0}
 .sub{color:var(--muted);font-size:13px;margin:2px 0 0}
 .htools{display:flex;align-items:center;gap:10px}
 .ver{color:var(--muted);font-size:12px}
@@ -95,8 +95,8 @@ a.link:hover{color:var(--fg);text-decoration:underline}
 .progress2{min-height:18px;color:var(--fg);font-size:13px;margin:12px 2px 0}
 
 /* встроенный браузер DOMEO — на всю ширину окна приложения */
-.browserwrap{width:100vw;margin-left:calc(50% - 50vw);margin-top:8px;background:var(--surface);
-  border:1px solid var(--border);border-left:0;border-right:0;border-radius:0;padding:10px 16px}
+.browserwrap{width:100vw;margin-left:calc(50% - 50vw);margin-top:6px;background:var(--surface);
+  border:1px solid var(--border);border-left:0;border-right:0;border-radius:0;padding:6px 16px 10px}
 .browserwrap.collapsed{display:none}
 .bhead{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin-bottom:6px}
 .bhead b{font-size:14px}

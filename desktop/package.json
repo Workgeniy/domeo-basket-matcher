@@ -1,6 +1,6 @@
 {
   "name": "domeo-podbor",
-  "version": "0.1.13",
+  "version": "0.1.14",
   "description": "DOMEO - podbor po korzine (desktop)",
   "main": "main.js",
   "author": "DOMEO",
@@ -20,10 +20,18 @@
   "build": {
     "appId": "ru.domeo.podbor",
     "productName": "DOMEO Podbor",
-    "directories": { "output": "release" },
-    "files": ["**/*", "!release/**", "!**/*.map"],
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "**/*",
+      "!release/**",
+      "!**/*.map"
+    ],
     "win": {
-      "target": ["nsis"],
+      "target": [
+        "nsis"
+      ],
       "artifactName": "DOMEO-Podbor-Setup-${version}.${ext}"
     },
     "nsis": {
