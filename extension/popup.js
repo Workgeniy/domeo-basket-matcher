@@ -72,7 +72,7 @@ async function pageGetShareLink() {
 // ---------- разбор ручного ввода ----------
 const QTY = /(\d+(?:[.,]\d+)?)\s*(штук[аи]?|шт\.?|мешок|мешк[аи]|мешков|меш\.?|ведро|ведра|вёдер|ведер|уп(?:ак)?|компл(?:ект)?|набор(?:ов|а)?|рулон(?:ов|а)?|м2|м3|м²|м³|м|л|кг|т)?\s*$/i;
 const DIM = /^[\d\s.,xх×*/()\-]+$/i, CYR = /[а-яА-ЯёЁ]{3,}/;
-const SKIP = /^(LEMANA|PETROVICH|VSEINSTRUMENTI|PAGE|НАИМЕНОВАНИЕ)\b|^https?:\/\//i;
+const SKIP = /^(LEMANA|PETROVICH|VSEINSTRUMENTI|PAGE|НАИМЕНОВАН)|^https?:\/\//i;
 function parseText(text) {
   const out = []; let last = null;
   for (let rawLine of text.split(/\r?\n/)) {
@@ -86,6 +86,7 @@ function parseText(text) {
     for (let raw of rawLine.split(/\s*[;,]\s+/)) {
       const line = raw.replace(/[\u{1F000}-\u{1FAFF}☀-➿️‍]/gu, "").replace(/[;,]\s*$/, "").replace(/\s+/g, " ").trim();
       if (!line || SKIP.test(line)) continue;
+      if (!/[а-яёa-z]/i.test(line)) continue; // строки без букв (пустые номера) пропускаем
       let s = line.replace(/^\s*\d{1,3}[.)]?\s+(?=\D)/, ""), name = s, qty = "";
       const m = s.match(QTY);
       if (m && m.index > 0) { qty = (m[1] + " " + (m[2] || "")).trim(); name = s.slice(0, m.index).trim(); }
@@ -427,13 +428,41 @@ function parseCsv(text) {
   const rows = lines.map(l => l.split(delim).map(c => c.replace(/^"|"$/g, "").trim()));
   return rowsToPositions(rows);
 }
+// извлечь текст из PDF (текстовый слой, без OCR)
+async function extractPdf(file) {
+  if (typeof pdfjsLib === "undefined") { $("#progress").textContent = "Не загрузилась библиотека PDF."; return ""; }
+  try { pdfjsLib.GlobalWorkerOptions.workerSrc = chrome.runtime.getURL("pdf.worker.min.js"); } catch (e) {}
+  const data = new Uint8Array(await file.arrayBuffer());
+  const doc = await pdfjsLib.getDocument({ data, isEvalSupported: false, useSystemFonts: true }).promise;
+  const lines = [];
+  for (let p = 1; p <= doc.numPages; p++) {
+    const page = await doc.getPage(p);
+    const tc = await page.getTextContent();
+    const rows = {};
+    for (const it of tc.items) {
+      if (it.str === undefined) continue;
+      const y = Math.round(it.transform[5]);
+      (rows[y] = rows[y] || []).push({ x: it.transform[4], s: it.str });
+    }
+    Object.keys(rows).map(Number).sort((a, b) => b - a).forEach(y => {
+      const line = rows[y].sort((a, b) => a.x - b.x).map(o => o.s).join(" ").replace(/\s+/g, " ").trim();
+      if (line) lines.push(line);
+    });
+  }
+  return lines.join("\n");
+}
+
 async function handleFile(file) {
   if (!file) return;
   const fname = (file.name || "").toLowerCase();
   $("#progress").textContent = "Читаю файл…";
   try {
     let pos;
-    if (/\.(csv|txt)$/.test(fname)) {
+    if (/\.pdf$/.test(fname)) {
+      const text = await extractPdf(file);
+      if (!text) return;
+      pos = parseText(text);
+    } else if (/\.(csv|txt)$/.test(fname)) {
       pos = parseCsv(await file.text());
     } else {
       if (typeof XLSX === "undefined") { $("#progress").textContent = "Не загрузилась библиотека xlsx. Сохраните файл как CSV."; return; }

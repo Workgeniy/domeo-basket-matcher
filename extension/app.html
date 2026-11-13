@@ -80,10 +80,10 @@ a.link:hover{text-decoration:underline}
   <textarea id="input" spellcheck="false" placeholder="Можно вставить вручную: вывод букмарклета (с табами) или список по строке."></textarea>
   <div class="row">
     <button id="run">Подобрать из поля</button>
-    <button id="loadfile">Загрузить Excel / CSV</button>
+    <button id="loadfile">Загрузить файл (Excel / CSV / PDF)</button>
     <button id="read">Из открытой вкладки</button>
     <button id="clear">Очистить</button>
-    <input id="file" type="file" accept=".xlsx,.xls,.csv,.txt" hidden>
+    <input id="file" type="file" accept=".xlsx,.xls,.csv,.txt,.pdf" hidden>
     <div class="progress" id="progress"></div>
   </div>
 
@@ -96,6 +96,7 @@ a.link:hover{text-decoration:underline}
   <div id="list"></div>
 </div>
 <script src="xlsx.full.min.js"></script>
+<script src="pdf.min.js"></script>
 <script src="popup.js"></script>
 </body>
 </html>
