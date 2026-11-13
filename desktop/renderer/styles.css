@@ -87,8 +87,15 @@ a.link:hover{color:var(--fg);text-decoration:underline}
 .histitem:first-child{border-top:0}
 .histitem .h{display:flex;justify-content:space-between;color:var(--muted);font-size:12px}
 
-/* встроенный браузер DOMEO (сворачиваемый) */
-.browserwrap{margin-top:18px;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:12px}
+/* ручной ввод (сворачиваемый блок) */
+.manual{margin-top:12px}
+.manual>summary{cursor:pointer;color:var(--muted);font-size:13px;padding:6px 2px;list-style:revert}
+.manual>summary:hover{color:var(--fg)}
+.manual .panel{margin-top:8px}
+.progress2{min-height:18px;color:var(--fg);font-size:13px;margin:12px 2px 0}
+
+/* встроенный браузер DOMEO */
+.browserwrap{margin-top:16px;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:12px}
 .browserwrap.collapsed{display:none}
 .bhead{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin-bottom:10px}
 .bhead .hint{margin:0}

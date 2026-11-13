@@ -20,7 +20,7 @@ const $ = s => document.querySelector(s);
 let state = [];
 
 const wv = $("#wv");
-const progress = t => { $("#progress").textContent = t; };
+const progress = t => { const el = $("#progress2") || $("#progress"); if (el) el.textContent = t; };
 
 // ---------- хранилище ----------
 async function getLS(key, def) { try { return await window.api.store.get(key, def); } catch (e) { return def; } }
@@ -292,7 +292,6 @@ function showCartLink(link) {
 }
 
 // ---------- встроенный браузер: навигация ----------
-$("#toggleBrowser").addEventListener("click", () => showBrowser($("#browserwrap").classList.contains("collapsed")));
 wv.addEventListener("dom-ready", () => { try { wv.setZoomFactor(1); } catch (e) {} });
 wv.addEventListener("did-navigate", e => { $("#addr").textContent = e.url; });
 wv.addEventListener("did-navigate-in-page", e => { $("#addr").textContent = e.url; });
@@ -325,12 +324,8 @@ function runInput() {
   matchAll(pos, "Ручной ввод");
 }
 
-// страница с закладкой «DOMEO: читать корзину» — открывается в системном браузере
-const BOOKMARKLET_URL = "https://workgeniy.github.io/domeo-basket-matcher/bookmarklet.html";
-
 // ---------- события управления ----------
 $("#run").addEventListener("click", runInput);
-$("#help").addEventListener("click", () => { window.api.openExternal(BOOKMARKLET_URL); progress("Открыл страницу закладки в вашем браузере — перетащите кнопку на панель закладок."); });
 $("#sample").addEventListener("click", () => { $("#input").value = SAMPLE; matchAll(parseText(SAMPLE), "Пример"); });
 $("#clear").addEventListener("click", () => { $("#input").value = ""; state = []; showResults(false); $("#cartlink").hidden = true; $("#histpanel").hidden = true; progress(""); });
 $("#rows").addEventListener("change", e => { const sel = e.target.closest("select.cand-pick"); if (!sel) return; state[+sel.dataset.i].pick = +sel.value; render(); });
