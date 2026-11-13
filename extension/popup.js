@@ -279,7 +279,30 @@ function waitLoaded(tab) {
   });
 }
 
+// ---------- открыть корзину по ссылке и прочитать ----------
+async function openLinkAndRead() {
+  const url = ($("#link").value || "").trim();
+  if (!/^https?:\/\//i.test(url)) { $("#progress").textContent = "Вставьте ссылку на корзину (начинается с http…)."; return; }
+  $("#progress").textContent = "Открываю корзину по ссылке…";
+  let tab;
+  try { tab = await chrome.tabs.create({ url, active: false }); }
+  catch (e) { $("#progress").textContent = "Не удалось открыть ссылку: " + e.message; return; }
+  await waitComplete(tab.id);
+  await new Promise(r => setTimeout(r, 1000)); // дать корзине дорисоваться
+  let res;
+  try { const r = await chrome.scripting.executeScript({ target: { tabId: tab.id }, func: pageExtract }); res = r[0].result; }
+  catch (e) { $("#progress").textContent = "Не удалось прочитать страницу: " + e.message; return; }
+  if (!res || !res.items.length) {
+    $("#progress").textContent = "На странице корзина не найдена. Проверьте, что вы вошли у поставщика и по ссылке открывается именно корзина.";
+    return;
+  }
+  $("#src").textContent = "Источник: " + res.source + " · " + res.items.length + " поз.";
+  await matchAll(res.items, res.source);
+}
+
 // ---------- события ----------
+$("#openlink").addEventListener("click", openLinkAndRead);
+$("#link").addEventListener("keydown", e => { if (e.key === "Enter") openLinkAndRead(); });
 $("#read").addEventListener("click", readActive);
 $("#run").addEventListener("click", () => {
   const pos = parseText($("#input").value);
