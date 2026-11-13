@@ -1,18 +1,26 @@
 "use strict";
-// DOMEO · Подбор по корзине — рендер (десктоп).
-// Логика подбора перенесена из расширения; вместо chrome.tabs/scripting — встроенный webview,
-// вместо chrome.storage — api.store (JSON в userData), поиск — через api.search (главный процесс).
+// DOMEO · Подбор по корзине — рендер (десктоп, светлая тема как в веб-версии).
+// Чтение корзины — закладкой в обычном браузере (вставляется в поле); сборка корзины
+// DOMEO и ссылка — через встроенный браузер (webview). Поиск — через главный процесс.
 
 const SITE = "https://store.domeo.ru";
 const GOOD = 160, WARN = 70;
 const DICT_KEY = "dict", HIST_KEY = "history", HIST_MAX = 50;
+
+const SAMPLE = [
+  "Звукоизоляция для канализационных труб StP NoiseBlock Pipe 110х6,7х3000 мм\t1 упак.\t602357",
+  "Соединитель одноуровневый краб Knauf 60х27 0,9 мм\t20 шт.\t150807",
+  "Коробка установочная Systeme Electric для бетона d68х61 мм IP30\t15 шт.\t128016",
+  "Лист алюминиевый Квинтет 1,5х600х1200 мм рифленый\t2 л.\t132152",
+  "Кронштейн сантехнический 110 мм пластик для крепления фановых труб\t6 шт.\t503445",
+  "пена монтажная\t3 шт\t"
+].join("\n");
 
 const $ = s => document.querySelector(s);
 let state = [];
 
 const wv = $("#wv");
 const progress = t => { $("#progress").textContent = t; };
-const srcText = t => { $("#src").textContent = t; };
 
 // ---------- хранилище ----------
 async function getLS(key, def) { try { return await window.api.store.get(key, def); } catch (e) { return def; } }
@@ -70,13 +78,11 @@ async function pageGetShareLink() {
   return "";
 }
 
-// запустить функцию внутри webview
 function runInPage(fn, arg) {
   const call = arg === undefined ? "(" + fn.toString() + ")()" : "(" + fn.toString() + ")(" + JSON.stringify(arg) + ")";
   return wv.executeJavaScript(call, true);
 }
 
-// навигация webview с ожиданием загрузки
 function navigate(url) {
   return new Promise(resolve => {
     let done = false;
@@ -87,7 +93,7 @@ function navigate(url) {
   });
 }
 
-// ---------- разбор ручного ввода ----------
+// ---------- разбор ввода ----------
 const QTY = /(\d+(?:[.,]\d+)?)\s*(штук[аи]?|шт\.?|мешок|мешк[аи]|мешков|меш\.?|ведро|ведра|вёдер|ведер|уп(?:ак)?|компл(?:ект)?|набор(?:ов|а)?|рулон(?:ов|а)?|м2|м3|м²|м³|м|л|кг|т)?\s*$/i;
 const DIM = /^[\d\s.,xх×*/()\-]+$/i, CYR = /[а-яА-ЯёЁ]{3,}/;
 const SKIP = /^(LEMANA|PETROVICH|VSEINSTRUMENTI|PAGE|НАИМЕНОВАНИЕ)\b|^https?:\/\//i;
@@ -114,47 +120,57 @@ async function search(term) { try { return await window.api.search(term); } catc
 // ---------- утилиты ----------
 const qtyNum = s => { const m = String(s).match(/\d+(?:[.,]\d+)?/); return m ? parseFloat(m[0].replace(",", ".")) : 1; };
 const money = n => (n || 0).toLocaleString("ru-RU", { maximumFractionDigits: 0 });
-const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const esc = s => String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 const trim = (s, n) => s.length > n ? s.slice(0, n - 1) + "…" : s;
+const safeLink = u => /^https:\/\/store\.domeo\.ru\//.test(u) ? u : "";
 function matchStatus(score) { if (score >= GOOD) return ["good", "Совпадение"]; if (score >= WARN) return ["warn", "Проверить"]; return ["crit", "Не найдено"]; }
 function statusOf(sel) { return sel ? (sel.fromDict ? ["good", "Из словаря"] : matchStatus(sel.score)) : ["crit", "Не найдено"]; }
 
-// ---------- рендер ----------
+// ---------- рендер таблицы ----------
 function render() {
-  const list = $("#list"); list.innerHTML = "";
+  const rows = $("#rows"); rows.innerHTML = "";
   state.forEach((it, i) => {
     const sel = it.cands[it.pick];
+    const candCell = it.loading ? '<span class="chip load">подбираю…</span>'
+      : it.cands.length ? candSelect(it, i) : '<span class="hint">нет кандидатов' + (it.name ? "" : " (нет названия)") + "</span>";
+    const price = sel ? '<span class="price">' + money(sel.price) + " ₽</span>" : "—";
     const [cls, label] = statusOf(sel);
     const chip = it.loading ? '<span class="chip load">…</span>' : '<span class="chip ' + cls + '">' + label + "</span>";
-    const price = sel ? '<span class="price">' + money(sel.price) + " ₽</span>" : '<span class="hint">—</span>';
-    let body;
-    if (it.loading) body = '<span class="chip load">подбираю…</span>';
-    else if (!it.cands.length) body = '<span class="hint">нет кандидатов' + (it.name ? "" : " (нет названия)") + "</span>";
-    else {
-      const opts = it.cands.map((c, j) => '<option value="' + j + '"' + (j === it.pick ? " selected" : "") + ">" + (c.fromDict ? "★ " : "") + esc(trim(c.name, 60)) + " — " + money(c.price) + " ₽</option>").join("");
-      body = '<select data-i="' + i + '">' + opts + "</select>";
-    }
-    const el = document.createElement("div");
-    el.className = "item";
-    el.innerHTML =
-      '<div class="pos">' + esc(it.name || "(без названия)") + ' <span class="q">' + esc(it.qty || "") + "</span>" +
-      (it.code ? '<span class="dictbadge">' + esc(it.source || "") + " " + esc(it.code) + "</span>" : "") + "</div>" +
-      body +
-      '<div class="meta"><span>' + (sel ? '<a class="link" href="' + esc(sel.link) + '" target="_blank">' + (sel.fromDict ? "из словаря" : esc(sel.brand || "карточка") + " · score " + sel.score) + "</a>" : "") + "</span>" +
-      "<span>" + price + " " + chip + "</span></div>";
-    list.appendChild(el);
+    const meta = esc(it.qty || "") + (it.code ? " · " + esc(it.source || "") + " " + esc(it.code) : "");
+    const tr = document.createElement("tr");
+    tr.innerHTML =
+      '<td><div class="pos-name">' + esc(it.name || "(без названия)") + '</div><div class="pos-meta">' + meta + "</div></td>" +
+      "<td>" + candCell + "</td><td>" + price + "</td><td>" + chip + "</td>";
+    rows.appendChild(tr);
   });
   summary();
 }
-const tile = (n, l) => '<div class="tile"><div class="n">' + n + '</div><div class="l">' + l + "</div></div>";
+function candSelect(it, i) {
+  const opts = it.cands.map((c, j) =>
+    '<option value="' + j + '"' + (j === it.pick ? " selected" : "") + ">" +
+    (c.fromDict ? "★ " : "") + esc(trim(c.name, 70)) + " — " + money(c.price) + " ₽</option>").join("");
+  const c = it.cands[it.pick];
+  const href = safeLink(c.link);
+  const linkHtml = c.fromDict ? '<span class="link">из словаря</span>'
+    : (href ? '<a class="link" href="' + esc(href) + '" target="_blank" rel="noopener noreferrer">' + esc(c.brand || "открыть карточку") + " ↗</a>"
+            : '<span class="link">' + esc(c.brand || "") + "</span>");
+  const sc = c.fromDict ? "" : ' <span class="score">score ' + (c.score | 0) + (c.avail ? "" : " · под заказ") + "</span>";
+  return '<div class="cand"><select class="cand-pick" data-i="' + i + '">' + opts + "</select><div>" + linkHtml + sc + "</div></div>";
+}
+const tile = (n, l) => '<div class="tile"><div class="n">' + esc(n) + '</div><div class="l">' + esc(l) + "</div></div>";
 function summary() {
   const done = state.filter(s => !s.loading);
-  let good = 0, warn = 0, sum = 0;
-  done.forEach(s => { const sel = s.cands[s.pick]; if (!sel) return; const [cls] = statusOf(sel); if (cls === "good") good++; else if (cls === "warn") warn++; sum += sel.price * qtyNum(s.qty); });
-  $("#summary").hidden = state.length === 0;
-  $("#summary").innerHTML = tile(state.length, "позиций") + tile(good, "совпад.") + tile(warn, "проверить") + tile(money(sum) + " ₽", "сумма");
-  $("#cartrow").hidden = state.length === 0;
+  let good = 0, warn = 0, crit = 0, sum = 0;
+  done.forEach(s => { const sel = s.cands[s.pick]; if (!sel) { crit++; return; } const [cls] = statusOf(sel); if (cls === "good") good++; else if (cls === "warn") warn++; else crit++; sum += sel.price * qtyNum(s.qty); });
+  $("#summary").innerHTML = tile(state.length, "позиций") + tile(good, "совпадений") + tile(warn, "на проверку") + tile(crit, "не найдено") + tile(money(sum) + " ₽", "сумма подбора");
 }
+
+function showResults(on) {
+  $("#summary").hidden = !on;
+  $("#result").hidden = !on;
+  $("#actionrow").hidden = !on;
+}
+function showBrowser(on) { $("#browserwrap").classList.toggle("collapsed", !on); }
 
 // ---------- подбор по списку ----------
 async function matchAll(positions, source) {
@@ -162,6 +178,8 @@ async function matchAll(positions, source) {
   state = positions.map(p => ({ name: p.name, qty: p.qty, code: p.code || "", source, cands: [], pick: 0, loading: true }));
   $("#histpanel").hidden = true;
   $("#cartlink").hidden = true;
+  showResults(true);
+  $("#run").disabled = true;
   render();
   for (let i = 0; i < state.length; i++) {
     progress("Подбор " + (i + 1) + " / " + state.length + "…");
@@ -180,6 +198,7 @@ async function matchAll(positions, source) {
     render();
   }
   progress("Готово.");
+  $("#run").disabled = false;
 }
 
 // ---------- словарь и история ----------
@@ -219,14 +238,14 @@ async function showHistory() {
   panel.hidden = false;
 }
 
-// ---------- чтение корзины из окна ----------
+// ---------- чтение корзины из встроенного окна ----------
 async function readActive() {
+  showBrowser(true);
   progress("Читаю корзину из окна…");
   let res;
   try { res = await runInPage(pageExtract); }
   catch (e) { progress("Не удалось прочитать окно: " + (e && e.message || e)); return; }
-  if (!res || !res.items.length) { srcText("—"); progress("В окне корзина не найдена. Откройте корзину Петрович/ВИ/Lemana или вставьте список вручную."); return; }
-  srcText("Источник: " + res.source + " · " + res.items.length + " поз.");
+  if (!res || !res.items.length) { progress("В окне корзина не найдена. Откройте корзину поставщика в окне ниже или вставьте список из закладки."); return; }
   await matchAll(res.items, res.source);
 }
 
@@ -240,6 +259,7 @@ async function assemble() {
     if (id) items.push({ path, id, qty: qtyNum(s.qty) });
   }
   if (!items.length) { progress("Нет подобранных товаров."); return; }
+  showBrowser(true);
   $("#cart").disabled = true;
   progress("Открываю store.domeo.ru…");
   await navigate(SITE + "/");
@@ -262,7 +282,8 @@ function showCartLink(link) {
   const el = $("#cartlink");
   if (!link) { el.hidden = true; return; }
   el.innerHTML = "<div>Ссылка на собранную корзину:</div><div class=\"u\" id=\"cl\">" + esc(link) + "</div>" +
-    "<div class=\"r\"><button id=\"clcopy\">Скопировать ссылку</button><a class=\"link\" href=\"" + esc(link) + "\" target=\"_blank\">Открыть ↗</a></div>";
+    "<div class=\"r\"><button class=\"primary\" id=\"clcopy\">Скопировать ссылку</button>" +
+    "<a class=\"link\" href=\"" + esc(safeLink(link) || "#") + "\" target=\"_blank\" rel=\"noopener noreferrer\">Открыть ↗</a></div>";
   el.hidden = false;
   $("#clcopy").addEventListener("click", async () => {
     try { await navigator.clipboard.writeText(link); } catch (e) {}
@@ -270,31 +291,26 @@ function showCartLink(link) {
   });
 }
 
-// ---------- webview: навигация ----------
-$("#toggleSide").addEventListener("click", () => document.body.classList.toggle("side-collapsed"));
+// ---------- встроенный браузер: навигация ----------
+$("#toggleBrowser").addEventListener("click", () => showBrowser($("#browserwrap").classList.contains("collapsed")));
 wv.addEventListener("dom-ready", () => { try { wv.setZoomFactor(1); } catch (e) {} });
 wv.addEventListener("did-navigate", e => { $("#addr").textContent = e.url; });
 wv.addEventListener("did-navigate-in-page", e => { $("#addr").textContent = e.url; });
 $("#back").addEventListener("click", () => { if (wv.canGoBack()) wv.goBack(); });
 $("#fwd").addEventListener("click", () => { if (wv.canGoForward()) wv.goForward(); });
 $("#reload").addEventListener("click", () => wv.reload());
-$("#go").addEventListener("click", () => {
-  let u = $("#url").value.trim(); if (!u) return;
-  if (!/^https?:\/\//i.test(u)) u = "https://" + u;
-  navigate(u);
-});
-$("#url").addEventListener("keydown", e => { if (e.key === "Enter") $("#go").click(); });
-document.querySelectorAll(".chipbtn").forEach(b => b.addEventListener("click", () => navigate(b.dataset.url)));
+document.querySelectorAll(".chipbtn").forEach(b => b.addEventListener("click", () => { showBrowser(true); navigate(b.dataset.url); }));
+$("#read").addEventListener("click", readActive);
 
 // ---------- события управления ----------
-$("#read").addEventListener("click", readActive);
 $("#run").addEventListener("click", () => {
   const pos = parseText($("#input").value);
-  if (!pos.length) { progress("Поле пустое."); return; }
-  srcText("Из поля ввода · " + pos.length + " поз.");
+  if (!pos.length) { progress("Нет позиций для разбора."); return; }
   matchAll(pos, "Ручной ввод");
 });
-$("#list").addEventListener("change", e => { const sel = e.target.closest("select"); if (!sel) return; state[+sel.dataset.i].pick = +sel.value; render(); });
+$("#sample").addEventListener("click", () => { $("#input").value = SAMPLE; matchAll(parseText(SAMPLE), "Пример"); });
+$("#clear").addEventListener("click", () => { $("#input").value = ""; state = []; showResults(false); $("#cartlink").hidden = true; $("#histpanel").hidden = true; progress(""); });
+$("#rows").addEventListener("change", e => { const sel = e.target.closest("select.cand-pick"); if (!sel) return; state[+sel.dataset.i].pick = +sel.value; render(); });
 $("#cart").addEventListener("click", assemble);
 $("#remember").addEventListener("click", async () => { const n = await saveMatches(); progress("Запомнено соответствий: " + n + "."); });
 $("#hist").addEventListener("click", showHistory);
@@ -304,7 +320,7 @@ $("#hist").addEventListener("click", showHistory);
 
 const updbar = $("#updbar");
 function showUpd(html, withInstall) {
-  updbar.innerHTML = html + (withInstall ? '<button id="doInstall" class="ghost">Перезапустить и обновить</button>' : "");
+  updbar.innerHTML = html + (withInstall ? '<button class="primary" id="doInstall">Перезапустить и обновить</button>' : "");
   updbar.hidden = false;
   if (withInstall) $("#doInstall").addEventListener("click", () => window.api.installUpdate());
 }

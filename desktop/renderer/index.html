@@ -3,73 +3,83 @@
 <head>
   <meta charset="utf-8" />
   <meta http-equiv="Content-Security-Policy"
-        content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; font-src 'self'; connect-src 'none';" />
+        content="default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'none';" />
   <title>DOMEO · Подбор по корзине</title>
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
-  <header id="top">
-    <div class="brand">DOMEO · Подбор по корзине</div>
-    <div class="top-right">
-      <span id="ver" class="ver"></span>
-      <button id="btnUpd" class="ghost" title="Проверить обновления">Обновления</button>
+  <div class="wrap">
+    <header class="app">
+      <span class="logo">DOMEO</span>
+      <div class="htext">
+        <h1>Подбор по корзине</h1>
+        <p class="sub">Позиции из корзины поставщика → аналоги из каталога store.domeo.ru</p>
+      </div>
+      <div class="htools">
+        <span id="ver" class="ver"></span>
+        <button id="btnUpd" class="ghost">Обновления</button>
+      </div>
+    </header>
+
+    <div id="updbar" class="updbar" hidden></div>
+
+    <div class="panel">
+      <textarea id="input" spellcheck="false"
+        placeholder="Вставьте список из закладки «DOMEO: читать корзину» (из вашего браузера) или введите вручную — по одной позиции в строке."></textarea>
+      <p class="hint">Корзину поставщика читайте закладкой в обычном браузере и вставляйте сюда. Подбор идёт по каталогу DOMEO (Diginetica).</p>
+      <div class="controls">
+        <button class="primary" id="run">Подобрать</button>
+        <button id="sample">Пример</button>
+        <button id="clear">Очистить</button>
+        <button id="toggleBrowser" class="ghost">Браузер DOMEO</button>
+        <span id="progress" class="hint" style="align-self:center"></span>
+      </div>
     </div>
-  </header>
 
-  <div id="updbar" class="updbar" hidden></div>
+    <div id="summary" class="summary" hidden></div>
 
-  <main id="layout">
-    <!-- левая панель: управление и результаты -->
-    <section id="side">
-      <div class="block">
-        <div class="label">1. Откройте корзину поставщика в окне справа</div>
-        <div class="quick">
-          <button class="chipbtn" data-url="https://petrovich.ru/">Петрович</button>
-          <button class="chipbtn" data-url="https://www.vseinstrumenti.ru/">ВсеИнструменты</button>
-          <button class="chipbtn" data-url="https://lemanapro.ru/">Lemana</button>
-          <button class="chipbtn" data-url="https://store.domeo.ru/">DOMEO</button>
-        </div>
-        <div class="urlrow">
-          <input id="url" type="text" placeholder="или вставьте ссылку на корзину и нажмите Перейти" />
-          <button id="go">Перейти</button>
-        </div>
-        <button id="read" class="primary wide">Прочитать корзину из окна →</button>
-        <div class="tip">Если сайт поставщика просит проверку или вход — пройдите её прямо в окне справа один раз. Сессия сохранится, и дальше корзины будут читаться без помех.</div>
+    <div id="result" class="tablewrap" hidden>
+      <table>
+        <thead><tr>
+          <th style="width:34%">Позиция из корзины</th>
+          <th style="width:42%">Подобрано в DOMEO</th>
+          <th style="width:12%">Цена</th>
+          <th style="width:12%">Статус</th>
+        </tr></thead>
+        <tbody id="rows"></tbody>
+      </table>
+    </div>
+
+    <div id="actionrow" class="controls actionrow" hidden>
+      <button class="primary" id="cart">Собрать корзину в DOMEO</button>
+      <button id="remember">Запомнить соответствия</button>
+      <button id="hist">История</button>
+    </div>
+
+    <div id="cartlink" class="cartlink" hidden></div>
+    <div id="histpanel" class="histpanel" hidden></div>
+
+    <div id="browserwrap" class="browserwrap collapsed">
+      <div class="bhead">
+        <b>Браузер DOMEO</b>
+        <span class="hint">здесь приложение собирает корзину. Войдите в store.domeo.ru один раз — сессия сохранится.</span>
       </div>
-
-      <div class="block">
-        <div class="label">…или вставьте список вручную</div>
-        <textarea id="input" rows="4" placeholder="Название, количество — по строке на позицию"></textarea>
-        <button id="run" class="wide">Подобрать по списку</button>
+      <div class="quick">
+        <button class="chipbtn" data-url="https://store.domeo.ru/">DOMEO</button>
+        <button class="chipbtn" data-url="https://petrovich.ru/">Петрович</button>
+        <button class="chipbtn" data-url="https://www.vseinstrumenti.ru/">ВИ</button>
+        <button class="chipbtn" data-url="https://lemanapro.ru/">Lemana</button>
+        <button id="read">Прочитать корзину из окна</button>
       </div>
-
-      <div id="src" class="src">—</div>
-      <div id="progress" class="progress"></div>
-
-      <div id="summary" class="summary" hidden></div>
-      <div id="list" class="list"></div>
-
-      <div id="cartrow" class="cartrow" hidden>
-        <button id="cart" class="primary">Собрать корзину в DOMEO</button>
-        <button id="remember" class="ghost">Запомнить</button>
-        <button id="hist" class="ghost">История</button>
-      </div>
-      <div id="cartlink" class="cartlink" hidden></div>
-      <div id="histpanel" class="histpanel" hidden></div>
-    </section>
-
-    <!-- правая панель: встроенный браузер -->
-    <section id="browser">
       <div class="bbar">
-        <button id="toggleSide" class="navbtn" title="Свернуть/развернуть левую панель">☰</button>
         <button id="back" class="navbtn" title="Назад">‹</button>
         <button id="fwd" class="navbtn" title="Вперёд">›</button>
         <button id="reload" class="navbtn" title="Обновить">⟳</button>
         <span id="addr" class="addr"></span>
       </div>
       <webview id="wv" src="https://store.domeo.ru/" partition="persist:domeo" allowpopups></webview>
-    </section>
-  </main>
+    </div>
+  </div>
 
   <script src="renderer.js"></script>
 </body>
