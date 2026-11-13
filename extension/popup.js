@@ -75,17 +75,25 @@ const DIM = /^[\d\s.,xх×*/()\-]+$/i, CYR = /[а-яА-ЯёЁ]{3,}/;
 const SKIP = /^(LEMANA|PETROVICH|VSEINSTRUMENTI|PAGE|НАИМЕНОВАНИЕ)\b|^https?:\/\//i;
 function parseText(text) {
   const out = []; let last = null;
-  for (let raw of text.split(/\r?\n/)) {
-    const line = raw.replace(/[\u{1F000}-\u{1FAFF}☀-➿️‍]/gu, "").trim();
-    if (!line || SKIP.test(line)) continue;
-    if (line.includes("\t")) { const c = line.split("\t"); if (!(c[0] || "").trim()) continue; out.push({ name: c[0].trim(), qty: (c[1] || "").trim(), code: (c[2] || "").trim() }); continue; }
-    let s = line.replace(/^\s*\d{1,3}[.)]?\s+(?=\D)/, ""), name = s, qty = "";
-    const m = s.match(QTY);
-    if (m && m.index > 0) { qty = (m[1] + " " + (m[2] || "")).trim(); name = s.slice(0, m.index).trim(); }
-    if (!name) name = s;
-    if (DIM.test(name)) { if (last) name = last + " " + name; }
-    else { const w = name.match(CYR); if (w) last = w[0]; }
-    out.push({ name, qty, code: "" });
+  for (let rawLine of text.split(/\r?\n/)) {
+    // строки из закладки (с табами) — одна позиция целиком, запятыми не делим
+    if (rawLine.includes("\t")) {
+      const c = rawLine.split("\t");
+      if ((c[0] || "").trim()) out.push({ name: c[0].trim(), qty: (c[1] || "").trim(), code: (c[2] || "").trim() });
+      continue;
+    }
+    // ручной список: позиции могут быть разделены запятыми или «;» (пробел после — чтобы не ломать 1,5)
+    for (let raw of rawLine.split(/\s*[;,]\s+/)) {
+      const line = raw.replace(/[\u{1F000}-\u{1FAFF}☀-➿️‍]/gu, "").replace(/[;,]\s*$/, "").replace(/\s+/g, " ").trim();
+      if (!line || SKIP.test(line)) continue;
+      let s = line.replace(/^\s*\d{1,3}[.)]?\s+(?=\D)/, ""), name = s, qty = "";
+      const m = s.match(QTY);
+      if (m && m.index > 0) { qty = (m[1] + " " + (m[2] || "")).trim(); name = s.slice(0, m.index).trim(); }
+      if (!name) name = s;
+      if (DIM.test(name)) { if (last) name = last + " " + name; }
+      else { const w = name.match(CYR); if (w) last = w[0]; }
+      out.push({ name, qty, code: "" });
+    }
   }
   return out;
 }
