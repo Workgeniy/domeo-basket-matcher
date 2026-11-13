@@ -403,6 +403,55 @@ function clearAll() {
 }
 $("#clear").addEventListener("click", clearAll);
 
+// ---------- загрузка Excel / CSV ----------
+// строки таблицы -> позиции (имя + количество)
+function rowsToPositions(rows) {
+  const out = [];
+  let start = 0;
+  const hdr = (rows[0] || []).map(c => String(c == null ? "" : c));
+  if (hdr.some(c => /наимен|назван|товар|позици|кол-?во|количеств|артикул|^код/i.test(c))) start = 1;
+  for (let i = start; i < rows.length; i++) {
+    const row = (rows[i] || []).map(c => (c == null ? "" : String(c)).replace(/\s+/g, " ").trim());
+    if (!row.some(c => c)) continue;
+    let name = "", qty = "", nameIdx = -1;
+    for (let j = 0; j < row.length; j++) { if (/[a-zа-яё]/i.test(row[j])) { name = row[j]; nameIdx = j; break; } }
+    for (let j = nameIdx + 1; j < row.length; j++) { if (/\d/.test(row[j])) { qty = row[j]; break; } }
+    if (!name) name = row.find(c => c) || "";
+    if (name) out.push({ name, qty, code: "" });
+  }
+  return out;
+}
+function parseCsv(text) {
+  const lines = text.split(/\r?\n/).filter(l => l.trim());
+  const delim = (text.split(";").length > text.split(",").length) ? ";" : (text.indexOf("\t") >= 0 ? "\t" : ",");
+  const rows = lines.map(l => l.split(delim).map(c => c.replace(/^"|"$/g, "").trim()));
+  return rowsToPositions(rows);
+}
+async function handleFile(file) {
+  if (!file) return;
+  const fname = (file.name || "").toLowerCase();
+  $("#progress").textContent = "Читаю файл…";
+  try {
+    let pos;
+    if (/\.(csv|txt)$/.test(fname)) {
+      pos = parseCsv(await file.text());
+    } else {
+      if (typeof XLSX === "undefined") { $("#progress").textContent = "Не загрузилась библиотека xlsx. Сохраните файл как CSV."; return; }
+      const wb = XLSX.read(await file.arrayBuffer(), { type: "array" });
+      const ws = wb.Sheets[wb.SheetNames[0]];
+      const rows = XLSX.utils.sheet_to_json(ws, { header: 1, raw: false, defval: "" });
+      pos = rowsToPositions(rows);
+    }
+    if (!pos || !pos.length) { $("#progress").textContent = "В файле не нашёл позиций."; return; }
+    $("#src").textContent = "Из файла: " + file.name + " · " + pos.length + " поз.";
+    await matchAll(pos, "Файл");
+  } catch (e) { $("#progress").textContent = "Не удалось прочитать файл: " + (e && e.message || e); }
+}
+const _loadfile = document.querySelector("#loadfile");
+if (_loadfile) _loadfile.addEventListener("click", () => $("#file").click());
+const _file = document.querySelector("#file");
+if (_file) _file.addEventListener("change", e => { const f = e.target.files[0]; e.target.value = ""; handleFile(f); });
+
 // --- проверка обновлений ---
 const REPO_VERSION_URL = "https://raw.githubusercontent.com/Workgeniy/domeo-basket-matcher/main/VERSION";
 function cmpVer(a, b) {

@@ -75,11 +75,13 @@ a.link:hover{text-decoration:underline}
   </div>
   <div class="hint" style="margin:-4px 0 8px">Ссылку открываем в вашем браузере (вы залогинены) и читаем — анти-бот не мешает. Или откройте корзину сами и нажмите «Прочитать корзину».</div>
 
-  <textarea id="input" spellcheck="false" placeholder="Можно вставить вручную: вывод букмарклета (с табами) или список по строке."></textarea>
+  <textarea id="input" spellcheck="false" placeholder="Можно вставить вручную: список по строке или через запятую."></textarea>
   <div class="row">
-    <button id="read">Прочитать корзину (из открытой вкладки)</button>
     <button id="run">Подобрать из поля</button>
+    <button id="loadfile">Загрузить Excel / CSV</button>
+    <button id="read">Из открытой вкладки</button>
     <button id="clear">Очистить</button>
+    <input id="file" type="file" accept=".xlsx,.xls,.csv,.txt" hidden>
     <div class="progress" id="progress"></div>
   </div>
 
@@ -91,6 +93,7 @@ a.link:hover{text-decoration:underline}
   <div id="cartlink" hidden></div>
   <div id="list"></div>
 
+  <script src="xlsx.full.min.js"></script>
   <script src="popup.js"></script>
 </body>
 </html>
