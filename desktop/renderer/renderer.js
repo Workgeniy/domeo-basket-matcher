@@ -384,6 +384,6 @@ setTimeout(() => {
   fitWebview();
   try {
     const r = wv.getBoundingClientRect();
-    console.log("DIAG innerH=" + window.innerHeight + " wvH=" + Math.round(r.height) + " wvTop=" + Math.round(r.top));
+    console.log("DIAG innerW=" + window.innerWidth + " innerH=" + window.innerHeight + " wvW=" + Math.round(r.width) + " wvH=" + Math.round(r.height) + " wvTop=" + Math.round(r.top));
   } catch (e) {}
 }, 1800);
