@@ -19,7 +19,7 @@
 *{box-sizing:border-box}
 html,body{margin:0}
 body{background:var(--bg);color:var(--fg);font-family:var(--font);font-size:15px;line-height:1.5}
-.wrap{max-width:1040px;margin:0 auto;padding:20px 16px 56px}
+.wrap{max-width:min(1600px,97vw);margin:0 auto;padding:20px 16px 56px}
 
 /* шапка */
 header.app{display:flex;align-items:center;gap:12px;margin-bottom:18px}
@@ -105,7 +105,7 @@ a.link:hover{color:var(--fg);text-decoration:underline}
 .bbar{display:flex;align-items:center;gap:6px;margin-bottom:8px}
 .navbtn{width:30px;height:30px;padding:0;font-size:16px;line-height:1;border:1px solid var(--border);background:var(--bg)}
 .addr{color:var(--muted);font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-#wv{width:100%;height:560px;border:1px solid var(--border);border-radius:8px;background:#fff;display:block}
+#wv{width:100%;height:72vh;min-height:460px;border:1px solid var(--border);border-radius:8px;background:#fff;display:block}
 
 :focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 @media (max-width:620px){h1{font-size:18px}.summary{gap:8px}.tile{min-width:100px}}
