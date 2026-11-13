@@ -170,7 +170,16 @@ function showResults(on) {
   $("#result").hidden = !on;
   $("#actionrow").hidden = !on;
 }
-function showBrowser(on) { $("#browserwrap").classList.toggle("collapsed", !on); }
+function showBrowser(on) { $("#browserwrap").classList.toggle("collapsed", !on); if (on) setTimeout(fitWebview, 50); }
+
+// растянуть встроенный браузер на всю оставшуюся высоту окна
+function fitWebview() {
+  try {
+    const top = wv.getBoundingClientRect().top;
+    const h = Math.max(320, Math.floor(window.innerHeight - top - 14));
+    wv.style.height = h + "px";
+  } catch (e) {}
+}
 
 // ---------- подбор по списку ----------
 async function matchAll(positions, source) {
@@ -292,7 +301,8 @@ function showCartLink(link) {
 }
 
 // ---------- встроенный браузер: навигация ----------
-wv.addEventListener("dom-ready", () => { try { wv.setZoomFactor(1); } catch (e) {} });
+wv.addEventListener("dom-ready", () => { try { wv.setZoomFactor(1); } catch (e) {} fitWebview(); });
+window.addEventListener("resize", fitWebview);
 wv.addEventListener("did-navigate", e => { $("#addr").textContent = e.url; });
 wv.addEventListener("did-navigate-in-page", e => { $("#addr").textContent = e.url; });
 $("#back").addEventListener("click", () => { if (wv.canGoBack()) wv.goBack(); });
@@ -354,8 +364,13 @@ window.api.onUpdateStatus(m => {
 });
 $("#btnUpd").addEventListener("click", () => window.api.checkUpdates());
 
+// подгон высоты браузера при старте
+setTimeout(fitWebview, 300);
+setTimeout(fitWebview, 900);
+
 // dev-диагностика размеров (видно в чёрном окне запуска)
 setTimeout(() => {
+  fitWebview();
   try {
     const r = wv.getBoundingClientRect();
     console.log("DIAG innerH=" + window.innerHeight + " wvH=" + Math.round(r.height) + " wvTop=" + Math.round(r.top));
