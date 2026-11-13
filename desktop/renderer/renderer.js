@@ -172,13 +172,23 @@ function showResults(on) {
 }
 function showBrowser(on) { $("#browserwrap").classList.toggle("collapsed", !on); if (on) setTimeout(fitWebview, 50); }
 
-// растянуть встроенный браузер на всю оставшуюся высоту окна
+// растянуть встроенный браузер на всю оставшуюю высоту окна
 function fitWebview() {
   try {
     const top = wv.getBoundingClientRect().top;
     const h = Math.max(320, Math.floor(window.innerHeight - top - 14));
     wv.style.height = h + "px";
+    wv.executeJavaScript("window.dispatchEvent(new Event('resize'))", false).catch(() => {});
   } catch (e) {}
+}
+
+// подтолкнуть «ленивую» загрузку контента (скролл + события), чтобы не оставалось белое поле
+function kickLazy() {
+  const code = "(function(){try{var h=document.body?document.body.scrollHeight:0;" +
+    "window.scrollTo(0,Math.min(1200,h));window.dispatchEvent(new Event('scroll'));" +
+    "window.dispatchEvent(new Event('resize'));" +
+    "setTimeout(function(){window.scrollTo(0,0);},250);}catch(e){}})()";
+  try { wv.executeJavaScript(code, false).catch(() => {}); } catch (e) {}
 }
 
 // ---------- подбор по списку ----------
@@ -301,7 +311,8 @@ function showCartLink(link) {
 }
 
 // ---------- встроенный браузер: навигация ----------
-wv.addEventListener("dom-ready", () => { try { wv.setZoomFactor(1); } catch (e) {} fitWebview(); });
+wv.addEventListener("dom-ready", () => { try { wv.setZoomFactor(1); } catch (e) {} fitWebview(); setTimeout(kickLazy, 400); });
+wv.addEventListener("did-stop-loading", () => { fitWebview(); setTimeout(kickLazy, 350); setTimeout(kickLazy, 1200); });
 window.addEventListener("resize", fitWebview);
 wv.addEventListener("did-navigate", e => { $("#addr").textContent = e.url; });
 wv.addEventListener("did-navigate-in-page", e => { $("#addr").textContent = e.url; });
