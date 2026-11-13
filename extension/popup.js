@@ -341,6 +341,21 @@ if (_openwin) _openwin.addEventListener("click", () => {
   catch (e) {}
 });
 
+// очистить текущий разбор (список, поля, ссылку)
+function clearAll() {
+  state = [];
+  const inp = $("#input"); if (inp) inp.value = "";
+  const lnk = $("#link"); if (lnk) lnk.value = "";
+  $("#list").innerHTML = "";
+  $("#summary").hidden = true;
+  $("#cartrow").hidden = true;
+  $("#cartlink").hidden = true;
+  $("#histpanel").hidden = true;
+  $("#src").textContent = "—";
+  $("#progress").textContent = "Очищено.";
+}
+$("#clear").addEventListener("click", clearAll);
+
 // --- проверка обновлений ---
 const REPO_VERSION_URL = "https://raw.githubusercontent.com/Workgeniy/domeo-basket-matcher/main/VERSION";
 function cmpVer(a, b) {
