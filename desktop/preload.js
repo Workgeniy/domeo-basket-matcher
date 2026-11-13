@@ -8,6 +8,7 @@ contextBridge.exposeInMainWorld("api", {
   },
   search: (term) => ipcRenderer.invoke("search", term),
   version: () => ipcRenderer.invoke("app:version"),
+  openExternal: (url) => ipcRenderer.invoke("shell:open", url),
   checkUpdates: () => ipcRenderer.invoke("updates:check"),
   installUpdate: () => ipcRenderer.invoke("updates:install"),
   onUpdateStatus: (cb) => ipcRenderer.on("update-status", (e, payload) => cb(payload))

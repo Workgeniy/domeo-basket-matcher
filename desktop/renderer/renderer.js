@@ -325,8 +325,12 @@ function runInput() {
   matchAll(pos, "Ручной ввод");
 }
 
+// страница с закладкой «DOMEO: читать корзину» — открывается в системном браузере
+const BOOKMARKLET_URL = "https://workgeniy.github.io/domeo-basket-matcher/bookmarklet.html";
+
 // ---------- события управления ----------
 $("#run").addEventListener("click", runInput);
+$("#help").addEventListener("click", () => { window.api.openExternal(BOOKMARKLET_URL); progress("Открыл страницу закладки в вашем браузере — перетащите кнопку на панель закладок."); });
 $("#sample").addEventListener("click", () => { $("#input").value = SAMPLE; matchAll(parseText(SAMPLE), "Пример"); });
 $("#clear").addEventListener("click", () => { $("#input").value = ""; state = []; showResults(false); $("#cartlink").hidden = true; $("#histpanel").hidden = true; progress(""); });
 $("#rows").addEventListener("change", e => { const sel = e.target.closest("select.cand-pick"); if (!sel) return; state[+sel.dataset.i].pick = +sel.value; render(); });

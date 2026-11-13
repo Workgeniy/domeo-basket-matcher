@@ -66,6 +66,9 @@ ipcMain.handle("store:set", (e, key, val) => { store[key] = val; saveStore(); re
 // ---------- IPC: версия ----------
 ipcMain.handle("app:version", () => app.getVersion());
 
+// ---------- IPC: открыть ссылку в системном браузере ----------
+ipcMain.handle("shell:open", (e, url) => { if (/^https?:\/\//i.test(url)) shell.openExternal(url); });
+
 // ---------- IPC: подбор (Diginetica) ----------
 ipcMain.handle("search", async (e, term) => {
   if (!term) return [];
