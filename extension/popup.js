@@ -210,9 +210,22 @@ async function showHistory() {
 }
 
 // ---------- чтение активной вкладки ----------
+const IS_WINDOW = location.pathname.endsWith("app.html");
+const SUPPLIER_RE = /petrovich\.ru|vseinstrumenti\.ru|lemanapro\.ru|store\.domeo\.ru/;
+function isOwnPage(u) { return !u || /^chrome-extension:\/\//.test(u) || u.startsWith(location.origin); }
+
+// активная вкладка-корзина (в отдельном окне — из обычного окна браузера, не страница расширения)
+async function targetTab() {
+  const cur = (await chrome.tabs.query({ active: true, currentWindow: true }))[0];
+  if (cur && !isOwnPage(cur.url)) return cur;
+  const all = await chrome.tabs.query({ active: true });
+  return all.find(t => SUPPLIER_RE.test(t.url || "")) || all.find(t => !isOwnPage(t.url)) || cur;
+}
+
 async function readActive() {
   $("#progress").textContent = "Читаю корзину…";
-  const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+  const tab = await targetTab();
+  if (!tab) { $("#progress").textContent = "Не нашёл вкладку с корзиной. Откройте корзину поставщика в обычном окне."; return; }
   let res;
   try { const r = await chrome.scripting.executeScript({ target: { tabId: tab.id }, func: pageExtract }); res = r[0].result; }
   catch (e) { $("#progress").textContent = "Не удалось прочитать страницу: " + e.message; return; }
@@ -285,18 +298,23 @@ async function openLinkAndRead() {
   if (!/^https?:\/\//i.test(url)) { $("#progress").textContent = "Вставьте ссылку на корзину (начинается с http…)."; return; }
   $("#progress").textContent = "Открываю корзину по ссылке…";
   let tab;
-  try { tab = await chrome.tabs.create({ url, active: false }); }
+  try { tab = await chrome.tabs.create({ url, active: IS_WINDOW }); }
   catch (e) { $("#progress").textContent = "Не удалось открыть ссылку: " + e.message; return; }
   await waitComplete(tab.id);
-  await new Promise(r => setTimeout(r, 1000)); // дать корзине дорисоваться
-  let res;
-  try { const r = await chrome.scripting.executeScript({ target: { tabId: tab.id }, func: pageExtract }); res = r[0].result; }
-  catch (e) { $("#progress").textContent = "Не удалось прочитать страницу: " + e.message; return; }
-  if (!res || !res.items.length) {
-    $("#progress").textContent = "На странице корзина не найдена. Проверьте, что вы вошли у поставщика и по ссылке открывается именно корзина.";
-    return; // вкладку оставляем открытой, чтобы было видно, что пришло
+  // несколько попыток — корзина может догружаться скриптами
+  let res = null;
+  for (let i = 0; i < 6; i++) {
+    await new Promise(r => setTimeout(r, 700));
+    $("#progress").textContent = "Читаю корзину… (" + (i + 1) + ")";
+    try { const r = await chrome.scripting.executeScript({ target: { tabId: tab.id }, func: pageExtract }); res = r[0].result; }
+    catch (e) { res = null; }
+    if (res && res.items.length) break;
   }
-  try { await chrome.tabs.remove(tab.id); } catch (e) {} // прочитали — временную вкладку закрываем
+  if (!res || !res.items.length) {
+    $("#progress").textContent = "Корзина на странице не распознана. Вкладка осталась открытой — посмотрите, что там (вход/проверка или это не корзина).";
+    return;
+  }
+  try { await chrome.tabs.remove(tab.id); } catch (e) {}
   $("#src").textContent = "Источник: " + res.source + " · " + res.items.length + " поз.";
   await matchAll(res.items, res.source);
 }
