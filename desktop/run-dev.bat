@@ -4,26 +4,26 @@ title DOMEO - Podbor (zapusk iz koda)
 cd /d "C:\Users\Alex\Desktop\Petrovich\domeo-basket-matcher"
 
 echo ============================================================
-echo  DOMEO - Podbor po korzine : zapusk iz koda (dev)
+echo  DOMEO - Podbor po korzine : zapusk iz koda
 echo ============================================================
 echo.
-echo [1/3] Obnovlyayu kod s GitHub...
-git pull
+
+where git >nul 2>nul
+if errorlevel 1 echo [!] git ne nayden - propuskayu obnovlenie koda
+if not errorlevel 1 echo Obnovlyayu kod s GitHub...
+if not errorlevel 1 call git pull
 echo.
 
 cd desktop
-if not exist "node_modules\" (
-  echo [2/3] Pervaya ustanovka zavisimostey (odin raz, neskolko minut)...
-  call npm install
-) else (
-  echo [2/3] Zavisimosti uzhe ustanovleny - propuskayu.
-)
+if not exist node_modules echo Pervaya ustanovka zavisimostey (odin raz, neskolko minut)...
+if not exist node_modules call npm install
 echo.
 
-echo [3/3] Zapuskayu prilozhenie...
-echo (Eto okno ne zakryvayte, poka rabotaete v prilozhenii.)
+echo Zapuskayu prilozhenie. NE ZAKRYVAYTE eto okno, poka rabotaete.
 call npm start
 
 echo.
-echo Prilozhenie zakryto. Mozhno zakryt eto okno.
+echo ------------------------------------------------------------
+echo Prilozhenie zakryto. Esli vyshe oshibka - skopiruyte tekst i prishlite.
+echo ------------------------------------------------------------
 pause
