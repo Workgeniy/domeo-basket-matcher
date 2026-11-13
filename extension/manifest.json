@@ -1,10 +1,10 @@
 {
   "manifest_version": 3,
   "name": "DOMEO · Подбор по корзине",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Читает корзину поставщика (Петрович, ВсеИнструменты, Lemana), подбирает аналоги в store.domeo.ru и собирает корзину.",
   "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAoso2bj1Czl/n6YW4BASjYRGBONN2b4wAYX/IH14FK5U8zixo107ujzDzaPDwfPSBniEMBGL3UA5UpIfmRkaEc0yNh3snpECsWgQp+OHu5Vq6FPfaLINcmetPENsElHnSTN7EvNAyHSt3MoZqJd3eKG1zBbz+MagA/fYIXeMxs6W2REebc+Aof0zhpbSYa8BdcSkqjpmHLYei8GNLgc7oNtmUP1PIwgeNYSU5+IcaNdQN3u4pWZI+13gQGrKqX1UcnLgNXmsPyH/WpeqcPMedMasAnmuHaRrhuTUyKXg74nIWlOS2j3edOKrXUfJeWYELSa28GedtJ+7x68ZZUpqetQIDAQAB",
-  "permissions": ["activeTab", "scripting", "tabs"],
+  "permissions": ["activeTab", "scripting", "tabs", "storage"],
   "host_permissions": [
     "https://*.petrovich.ru/*",
     "https://*.vseinstrumenti.ru/*",
