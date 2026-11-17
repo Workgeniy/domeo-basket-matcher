@@ -481,6 +481,32 @@ if (_loadfile) _loadfile.addEventListener("click", () => $("#file").click());
 const _file = document.querySelector("#file");
 if (_file) _file.addEventListener("change", e => { const f = e.target.files[0]; e.target.value = ""; handleFile(f); });
 
+// ---------- перенос данных из панели в отдельное окно ----------
+async function saveHandoff() {
+  try { await chrome.storage.local.set({ handoff: { state, src: ($("#src") ? $("#src").textContent : "") || "", ts: Date.now() } }); } catch (e) {}
+}
+// команда от панели (content.js): сохранить состояние и открыть окно с теми же данными
+window.addEventListener("message", async (e) => {
+  if (e.data && e.data.domeoSaveAndDetach) {
+    await saveHandoff();
+    try { chrome.runtime.sendMessage({ domeoOpenWindow: true }); } catch (err) {}
+  }
+});
+// при запуске в ОТДЕЛЬНОМ окне (не в панели-iframe) — восстановить переданные данные
+(async () => {
+  if (window.top !== window.self) return; // внутри панели ничего не восстанавливаем
+  try {
+    const o = await chrome.storage.local.get("handoff");
+    const h = o && o.handoff;
+    if (h && h.state && h.state.length && (Date.now() - (h.ts || 0) < 120000)) {
+      state = h.state;
+      if (h.src && $("#src")) $("#src").textContent = h.src;
+      render();
+      await chrome.storage.local.remove("handoff");
+    }
+  } catch (e) {}
+})();
+
 // --- проверка обновлений ---
 const REPO_VERSION_URL = "https://raw.githubusercontent.com/Workgeniy/domeo-basket-matcher/main/VERSION";
 function cmpVer(a, b) {

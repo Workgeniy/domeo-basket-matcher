@@ -74,7 +74,8 @@
     });
 
     header.querySelector("#dmp-win").addEventListener("click", () => {
-      try { chrome.runtime.sendMessage({ domeoOpenWindow: true }); } catch (e) {}
+      // просим панель сохранить состояние и открыть отдельное окно с теми же данными
+      try { iframe.contentWindow.postMessage({ domeoSaveAndDetach: true }, "*"); } catch (e) {}
     });
     header.querySelector("#dmp-close").addEventListener("click", () => { wrap.style.display = "none"; });
     header.querySelector("#dmp-min").addEventListener("click", () => {
