@@ -4,6 +4,13 @@
 
 const HOSTS = /:\/\/([^/]*\.)?(petrovich\.ru|vseinstrumenti\.ru|lemanapro\.ru|store\.domeo\.ru)\b/i;
 
+// открыть интерфейс в отдельном окне (кнопка ⤢ в шапке панели)
+chrome.runtime.onMessage.addListener((msg) => {
+  if (msg && msg.domeoOpenWindow) {
+    chrome.windows.create({ url: chrome.runtime.getURL("app.html"), type: "normal", width: 1100, height: 820 });
+  }
+});
+
 chrome.action.onClicked.addListener(async (tab) => {
   if (!tab || !tab.id) return;
   try {

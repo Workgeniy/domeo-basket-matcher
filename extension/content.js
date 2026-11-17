@@ -25,6 +25,7 @@
     header.innerHTML =
       '<span style="background:#ffcb05;color:#1a1a1a;font-weight:700;font-size:11px;padding:2px 7px;border-radius:5px">DOMEO</span>' +
       '<span style="font-size:13px;font-weight:600;flex:1 1 auto">Подбор по корзине</span>' +
+      '<span id="dmp-win" title="Открыть в отдельном окне" style="cursor:pointer;font-size:15px;line-height:1;padding:4px 8px">⤢</span>' +
       '<span id="dmp-min" title="Свернуть" style="cursor:pointer;font-size:18px;line-height:1;padding:4px 8px">—</span>' +
       '<span id="dmp-close" title="Закрыть (иконкой — снова открыть)" style="cursor:pointer;font-size:18px;line-height:1;padding:2px 8px">×</span>';
 
@@ -72,6 +73,9 @@
       drag = false; rez = false;
     });
 
+    header.querySelector("#dmp-win").addEventListener("click", () => {
+      try { chrome.runtime.sendMessage({ domeoOpenWindow: true }); } catch (e) {}
+    });
     header.querySelector("#dmp-close").addEventListener("click", () => { wrap.style.display = "none"; });
     header.querySelector("#dmp-min").addEventListener("click", () => {
       minimized = !minimized;
