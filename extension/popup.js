@@ -346,7 +346,7 @@ async function openLinkAndRead() {
   if (!/^https?:\/\//i.test(url)) { $("#progress").textContent = "Вставьте ссылку на корзину (начинается с http…)."; return; }
   $("#progress").textContent = "Открываю корзину по ссылке…";
   let tab;
-  try { tab = await chrome.tabs.create({ url, active: IS_WINDOW }); }
+  try { tab = await chrome.tabs.create({ url, active: false }); }
   catch (e) { $("#progress").textContent = "Не удалось открыть ссылку: " + e.message; return; }
   await waitComplete(tab.id);
   // несколько попыток — корзина может догружаться скриптами
