@@ -181,7 +181,7 @@ function render() {
       body +
       '<div class="meta"><span>' + (sel ? '<a class="link" href="' + sel.link + '" target="_blank">' + (sel.fromDict ? "из словаря" : esc(sel.brand || "карточка") + " · " + Math.round((sel.sim || 0) * 100) + "%") + "</a>" : "") + "</span>" +
       "<span>" + price + " " + chip + "</span></div>" +
-      '<div class="research"><input class="rq" data-i="' + i + '" value="' + esc(it.name || "") + '" placeholder="искать по-своему…"><button class="rbtn" data-i="' + i + '">искать</button></div>';
+      '<div class="research"><input class="rq" data-i="' + i + '" value="' + esc(it.name || "") + '" placeholder="свой запрос или ссылка товара DOMEO"><button class="rbtn" data-i="' + i + '">искать</button></div>';
     list.appendChild(el);
   });
   summary();
@@ -384,6 +384,22 @@ $("#list").addEventListener("change", e => { const sel = e.target.closest("selec
 async function research(i, q) {
   q = (q || "").trim();
   if (!q || !state[i]) return;
+  // вставили ссылку на товар DOMEO — закрепляем именно его
+  const link = (q.match(/https?:\/\/store\.domeo\.ru\/\S+/i) || [])[0];
+  if (link && idFromLink(link)) {
+    state[i].loading = true; render();
+    let name = "Выбрано по ссылке", price = 0;
+    try {
+      const html = await (await fetch(link, { credentials: "include" })).text();
+      const t = (html.match(/property=["']og:title["']\s+content=["']([^"']+)/i) || html.match(/<title>([^<]+)<\/title>/i) || [])[1];
+      if (t) name = t.replace(/\s*[—|].*$/, "").trim();
+      const pm = html.match(/"price"\s*:\s*"?(\d[\d\s]*)/i);
+      if (pm) price = parseFloat(pm[1].replace(/\s/g, "")) || 0;
+    } catch (e) {}
+    state[i].cands = [{ name, brand: "", price, score: 0, avail: true, link, fromDict: false, sim: 1 }];
+    state[i].pick = 0; state[i].loading = false; render();
+    return;
+  }
   const dict = await getLS(DICT_KEY, {});
   state[i].loading = true; render();
   let cands = [];
