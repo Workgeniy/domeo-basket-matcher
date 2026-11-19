@@ -102,7 +102,13 @@ function parseText(text) {
 // ---------- подбор ----------
 const RX_NONWORD = /[^0-9a-zа-я]+/gi;
 function norm(s) { return String(s || "").toLowerCase().replace(/ё/g, "е").replace(RX_NONWORD, " ").replace(/\s+/g, " ").trim(); }
-function toks(s) { return norm(s).split(" ").filter(t => t.length >= 2); }
+function toks(s) {
+  const base = norm(s).split(" ").filter(t => t.length >= 2);
+  const set = new Set(base);
+  // отдельно добавляем числа/размеры (150, 250, 600…), чтобы «150м» и «150мм» совпадали
+  for (const t of base) { const nums = t.match(/\d{2,}/g); if (nums) for (const n of nums) set.add(n); }
+  return [...set];
+}
 
 // похожесть: доля слов запроса, найденных в названии кандидата (числа/размеры важны)
 function simScore(qTokens, text) {
@@ -135,19 +141,21 @@ async function search(term) {
   if (!term) return [];
   const qt = toks(term);
   let raw = await fetchRaw(term);
-  const best = raw.reduce((m, p) => Math.max(m, simScore(qt, (p.brand ? p.brand + " " : "") + (p.name || ""))), 0);
-  // слабый результат — пробуем короткий очищенный запрос и объединяем кандидатов
-  if (best < 0.4) {
-    const short = qt.filter(t => t.length >= 3 && !/^\d+$/.test(t)).slice(0, 5).join(" ");
-    if (short && short !== norm(term)) {
-      const raw2 = await fetchRaw(short);
+  const simOf = p => simScore(qt, (p.brand ? p.brand + " " : "") + (p.name || ""));
+  const best = raw.reduce((m, p) => Math.max(m, simOf(p)), 0);
+  // слабый результат — добираем кандидатов по отдельным значимым словам (нож, шпатель, ПГП…)
+  if (best < 0.5) {
+    // добираем кандидатов только по ГЛАВНОМУ слову (категории) — чтобы не притягивать шум
+    const head = qt.filter(t => /[а-яёa-z]/i.test(t) && t.length >= 3)[0];
+    if (head) {
+      const r2 = await fetchRaw(head);
       const seen = new Set(raw.map(p => p.link_url));
-      for (const p of raw2) if (!seen.has(p.link_url)) { seen.add(p.link_url); raw.push(p); }
+      for (const p of r2) if (!seen.has(p.link_url)) { seen.add(p.link_url); raw.push(p); }
     }
   }
-  const cands = raw.slice(0, 20).map(p => mapCand(p, qt));
+  const cands = raw.slice(0, 40).map(p => mapCand(p, qt));
   cands.sort((a, b) => (b.sim + (b.avail ? 0.08 : 0)) - (a.sim + (a.avail ? 0.08 : 0)) || (b.score - a.score));
-  return cands.slice(0, 6);
+  return cands.slice(0, 8);
 }
 
 // ---------- утилиты ----------
