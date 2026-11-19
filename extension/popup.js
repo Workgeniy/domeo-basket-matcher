@@ -127,15 +127,20 @@ function simScore(qTokens, text) {
   return s;
 }
 const sleep = ms => new Promise(r => setTimeout(r, ms));
+let netFail = false; // последний запрос не ответил/ошибся (таймаут, лимит каталога)
 async function fetchRaw(term) {
-  // с повтором: при пустом ответе/ошибке (бывает при частых запросах — лимит Diginetica) ждём и пробуем снова
-  for (let a = 0; a < 3; a++) {
+  // с таймаутом (чтобы не зависало) и одним повтором при пустом ответе
+  for (let a = 0; a < 2; a++) {
+    const ctrl = new AbortController();
+    const to = setTimeout(() => ctrl.abort(), 6000);
     try {
-      const j = await (await fetch(API + "?apiKey=" + APIKEY + "&st=" + encodeURIComponent(term))).json();
+      const j = await (await fetch(API + "?apiKey=" + APIKEY + "&st=" + encodeURIComponent(term), { signal: ctrl.signal })).json();
+      clearTimeout(to);
+      netFail = false;
       const p = j.products || [];
-      if (p.length || a === 2) return p;
-    } catch (e) {}
-    await sleep(500);
+      if (p.length || a === 1) return p;
+    } catch (e) { clearTimeout(to); netFail = true; }
+    await sleep(400);
   }
   return [];
 }
@@ -221,10 +226,19 @@ async function matchAll(positions, source) {
   $("#histpanel").hidden = true;
   $("#cartlink").hidden = true;
   render();
+  let fails = 0;
   for (let i = 0; i < state.length; i++) {
     $("#progress").textContent = "Подбор " + (i + 1) + " / " + state.length + "…";
     let cands = [];
     try { cands = state[i].name ? await search(state[i].name) : []; } catch (e) { cands = []; }
+    // каталог не отвечает на нескольких позициях подряд — останавливаемся, чтобы не висеть
+    if (netFail && !cands.length) fails++; else fails = 0;
+    if (fails >= 5) {
+      for (let k = i; k < state.length; k++) state[k].loading = false;
+      render();
+      $("#progress").textContent = "Каталог DOMEO временно ограничил запросы. Подождите ~минуту и нажмите «Подобрать» снова — лучше частями по 15–20 позиций.";
+      return;
+    }
     const hit = state[i].code ? dict[keyOf(source, state[i].code)] : null;
     if (hit) {
       const idx = cands.findIndex(c => idFromLink(c.link) === hit.id);
@@ -235,7 +249,7 @@ async function matchAll(positions, source) {
     state[i].loading = false;
     state[i].pick = 0; // кандидаты уже отранжированы по похожести (словарь — сверху)
     render();
-    if (i < state.length - 1) await sleep(180); // пауза между позициями — чтобы не ловить лимит каталога
+    if (i < state.length - 1) await sleep(300); // пауза между позициями — чтобы не ловить лимит каталога
   }
   $("#progress").textContent = "Готово.";
 }
