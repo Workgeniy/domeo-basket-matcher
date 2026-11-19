@@ -193,7 +193,7 @@ function render() {
     if (it.loading) body = '<span class="chip load">подбираю…</span>';
     else if (!it.cands.length) body = '<span class="hint">нет кандидатов' + (it.name ? "" : " (нет названия)") + "</span>";
     else {
-      const opts = it.cands.map((c, j) => '<option value="' + j + '"' + (j === it.pick ? " selected" : "") + ">" + (c.fromDict ? "★ " : "") + esc(trim(c.name, 60)) + " — " + money(c.price) + " ₽</option>").join("");
+      const opts = it.cands.map((c, j) => '<option value="' + j + '"' + (j === it.pick ? " selected" : "") + ">" + (c.fromDict ? "★ " : "") + esc(trim(c.name, 110)) + " — " + money(c.price) + " ₽</option>").join("");
       body = '<select data-i="' + i + '">' + opts + "</select>";
     }
     const el = document.createElement("div");
@@ -202,7 +202,8 @@ function render() {
       '<div class="pos">' + esc(it.name || "(без названия)") + ' <span class="q">' + esc(it.qty || "") + "</span>" +
       (it.code ? '<span class="dictbadge">' + esc(it.source || "") + " " + esc(it.code) + "</span>" : "") + "</div>" +
       body +
-      '<div class="meta"><span>' + (sel ? '<a class="link" href="' + sel.link + '" target="_blank">' + (sel.fromDict ? "из словаря" : esc(sel.brand || "карточка") + " · " + Math.round((sel.sim || 0) * 100) + "%") + "</a>" : "") + "</span>" +
+      ((sel && !it.loading) ? '<div class="selname">' + esc(sel.name) + "</div>" : "") +
+      '<div class="meta"><span>' + (sel ? '<a class="link" href="' + sel.link + '" target="_blank">' + (sel.fromDict ? "из словаря" : esc(sel.brand || "карточка") + " · " + Math.round((sel.sim || 0) * 100) + "%") + " ↗</a>" : "") + "</span>" +
       "<span>" + price + " " + chip + "</span></div>" +
       '<div class="research"><input class="rq" data-i="' + i + '" value="' + esc(it.name || "") + '" placeholder="свой запрос или ссылка товара DOMEO"><button class="rbtn" data-i="' + i + '">искать</button></div>';
     list.appendChild(el);
