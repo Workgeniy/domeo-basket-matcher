@@ -180,7 +180,8 @@ function render() {
       (it.code ? '<span class="dictbadge">' + esc(it.source || "") + " " + esc(it.code) + "</span>" : "") + "</div>" +
       body +
       '<div class="meta"><span>' + (sel ? '<a class="link" href="' + sel.link + '" target="_blank">' + (sel.fromDict ? "из словаря" : esc(sel.brand || "карточка") + " · " + Math.round((sel.sim || 0) * 100) + "%") + "</a>" : "") + "</span>" +
-      "<span>" + price + " " + chip + "</span></div>";
+      "<span>" + price + " " + chip + "</span></div>" +
+      '<div class="research"><input class="rq" data-i="' + i + '" value="' + esc(it.name || "") + '" placeholder="искать по-своему…"><button class="rbtn" data-i="' + i + '">искать</button></div>';
     list.appendChild(el);
   });
   summary();
@@ -378,6 +379,27 @@ $("#run").addEventListener("click", () => {
   matchAll(pos, "Ручной ввод");
 });
 $("#list").addEventListener("change", e => { const sel = e.target.closest("select"); if (!sel) return; state[+sel.dataset.i].pick = +sel.value; render(); });
+
+// ручной перепоиск по позиции (кнопка «искать» / Enter в поле)
+async function research(i, q) {
+  q = (q || "").trim();
+  if (!q || !state[i]) return;
+  const dict = await getLS(DICT_KEY, {});
+  state[i].loading = true; render();
+  let cands = [];
+  try { cands = await search(q); } catch (e) { cands = []; }
+  const hit = state[i].code ? dict[keyOf(state[i].source, state[i].code)] : null;
+  if (hit) {
+    const idx = cands.findIndex(c => idFromLink(c.link) === hit.id);
+    if (idx >= 0) { cands[idx].fromDict = true; cands.unshift(cands.splice(idx, 1)[0]); }
+  }
+  state[i].cands = cands;
+  state[i].pick = 0;
+  state[i].loading = false;
+  render();
+}
+$("#list").addEventListener("click", e => { const b = e.target.closest(".rbtn"); if (!b) return; const inp = b.parentElement.querySelector(".rq"); research(+b.dataset.i, inp ? inp.value : ""); });
+$("#list").addEventListener("keydown", e => { if (e.key === "Enter" && e.target.classList && e.target.classList.contains("rq")) { e.preventDefault(); research(+e.target.dataset.i, e.target.value); } });
 $("#cart").addEventListener("click", assemble);
 $("#remember").addEventListener("click", async () => { const n = await saveMatches(); $("#progress").textContent = "Запомнено соответствий: " + n + "."; });
 $("#hist").addEventListener("click", showHistory);
