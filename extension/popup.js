@@ -90,6 +90,7 @@ function parseText(text) {
       let s = line.replace(/^\s*\d{1,3}[.)]?\s+(?=\D)/, ""), name = s, qty = "";
       const m = s.match(QTY);
       if (m && m.index > 0) { qty = (m[1] + " " + (m[2] || "")).trim(); name = s.slice(0, m.index).trim(); }
+      name = name.replace(/[-\s]+$/, "");
       if (!name) name = s;
       if (DIM.test(name)) { if (last) name = last + " " + name; }
       else { const w = name.match(CYR); if (w) last = w[0]; }
@@ -125,9 +126,18 @@ function simScore(qTokens, text) {
   if (numTot > 0 && numHit === 0) s *= 0.6; // размеры не совпали — штраф
   return s;
 }
+const sleep = ms => new Promise(r => setTimeout(r, ms));
 async function fetchRaw(term) {
-  try { const j = await (await fetch(API + "?apiKey=" + APIKEY + "&st=" + encodeURIComponent(term))).json(); return j.products || []; }
-  catch (e) { return []; }
+  // с повтором: при пустом ответе/ошибке (бывает при частых запросах — лимит Diginetica) ждём и пробуем снова
+  for (let a = 0; a < 3; a++) {
+    try {
+      const j = await (await fetch(API + "?apiKey=" + APIKEY + "&st=" + encodeURIComponent(term))).json();
+      const p = j.products || [];
+      if (p.length || a === 2) return p;
+    } catch (e) {}
+    await sleep(500);
+  }
+  return [];
 }
 function mapCand(p, qTokens) {
   const name = p.name || "";
@@ -225,6 +235,7 @@ async function matchAll(positions, source) {
     state[i].loading = false;
     state[i].pick = 0; // кандидаты уже отранжированы по похожести (словарь — сверху)
     render();
+    if (i < state.length - 1) await sleep(180); // пауза между позициями — чтобы не ловить лимит каталога
   }
   $("#progress").textContent = "Готово.";
 }
