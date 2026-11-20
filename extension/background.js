@@ -1,8 +1,6 @@
 "use strict";
 // Клик по иконке расширения -> показать/скрыть плавающую панель на текущей странице.
-// Панель внедряется content-скриптом (на сайтах поставщиков и store.domeo.ru).
-
-const HOSTS = /:\/\/([^/]*\.)?(petrovich\.ru|vseinstrumenti\.ru|lemanapro\.ru|store\.domeo\.ru)\b/i;
+// Панель внедряется content-скриптом (на любом обычном сайте).
 
 // открыть интерфейс в отдельном окне (кнопка ⤢ в шапке панели)
 chrome.runtime.onMessage.addListener((msg) => {
@@ -16,14 +14,12 @@ chrome.action.onClicked.addListener(async (tab) => {
   try {
     await chrome.tabs.sendMessage(tab.id, { domeoToggle: true });
   } catch (e) {
-    // content-скрипт ещё не загрузился — попробуем внедрить (только на наших сайтах)
-    if (tab.url && HOSTS.test(tab.url)) {
-      try {
-        await chrome.scripting.executeScript({ target: { tabId: tab.id }, files: ["content.js"] });
-        await chrome.tabs.sendMessage(tab.id, { domeoToggle: true });
-      } catch (e2) {}
-    } else {
-      // не наш сайт — короткий значок-подсказка
+    // content-скрипт ещё не загрузился — внедряем на лету
+    try {
+      await chrome.scripting.executeScript({ target: { tabId: tab.id }, files: ["content.js"] });
+      await chrome.tabs.sendMessage(tab.id, { domeoToggle: true });
+    } catch (e2) {
+      // служебные страницы (chrome://, browser://, настройки, магазин) — туда внедрить нельзя
       try {
         chrome.action.setBadgeBackgroundColor({ tabId: tab.id, color: "#b4281f" });
         chrome.action.setBadgeText({ tabId: tab.id, text: "—" });
