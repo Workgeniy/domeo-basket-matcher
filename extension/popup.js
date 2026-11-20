@@ -23,10 +23,34 @@ function pageExtract() {
   const host = location.host, out = { source: "", items: [] };
   const txt = el => el ? el.textContent.replace(/\s+/g, " ").trim() : "";
   const products = new URLSearchParams(location.search).get("products");
-  if (products) {
-    out.source = "Lemana";
-    out.items = products.split(",").map(p => { const k = p.split(":"); return k.length === 2 ? { name: "", code: k[0].trim(), qty: k[1].trim() } : null; }).filter(Boolean);
-    return out;
+  // Lemana: названий в URL нет (там только артикул:кол-во) — названия читаем со страницы
+  if (/lemanapro\.ru$/.test(host) || products) {
+    const urlQty = {};
+    if (products) products.split(",").forEach(p => { const k = p.split(":"); if (k.length === 2) urlQty[k[0].trim()] = k[1].trim(); });
+    const marks = Array.from(document.querySelectorAll("*")).filter(el =>
+      el.children.length === 0 && /Арт.{0,3}\d{6,}/i.test(el.textContent || ""));
+    const items = [], usedRows = new Set(), usedCodes = new Set();
+    for (const mk of marks) {
+      const code = ((mk.textContent.match(/\d{6,}/) || [])[0]) || "";
+      if (!code || usedCodes.has(code)) continue;
+      let row = mk;
+      for (let d = 0; d < 7 && row.parentElement; d++) { row = row.parentElement; if (/₽|руб/i.test(row.textContent)) break; }
+      if (usedRows.has(row)) continue;
+      let name = "";
+      const cand = Array.from(row.querySelectorAll("a, span, div, p, h1, h2, h3, h4"))
+        .map(e => (e.textContent || "").replace(/\s+/g, " ").trim())
+        .filter(t => t.length >= 12 && /[а-яё]/i.test(t) && !/Арт/i.test(t) && !/₽|руб|\/шт/i.test(t));
+      if (cand.length) name = cand.sort((a, b) => b.length - a.length)[0];
+      if (!name) continue;
+      usedRows.add(row); usedCodes.add(code);
+      items.push({ name, code, qty: urlQty[code] || "" });
+    }
+    if (items.length) { out.source = "Lemana"; out.items = items; return out; }
+    if (products) {
+      out.source = "Lemana";
+      out.items = Object.keys(urlQty).map(code => ({ name: "", code, qty: urlQty[code] }));
+      return out;
+    }
   }
   if (/petrovich\.ru$/.test(host) && document.querySelector('[data-test="estimate-products"]')) {
     out.source = "Петрович";
